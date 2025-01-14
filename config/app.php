@@ -52,7 +52,7 @@ return [
     |
     */
 
-    'url' => env('APP_URL', 'https://societe-manage.com/hotelGest'),
+    'url' => env('APP_URL', 'https://societe-manage.com/bg'),
 
     /*
     |--------------------------------------------------------------------------
@@ -97,7 +97,7 @@ return [
 
     'cipher' => 'AES-256-CBC',
 
-    'key' => env('APP_KEY', 'base64:ZGJpbG50cm4zeHlvdHV4ZHljYmhjOHNua3RxZ2d6djA='),
+    'key' => env('APP_KEY', 'base64:ZnEyZnc3bXI4bmJrazVndmN0Ym5yazU0eWp5bW00NXg='),
 
     'previous_keys' => [
         ...array_filter(
