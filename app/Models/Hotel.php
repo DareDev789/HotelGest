@@ -12,15 +12,16 @@ class Hotel extends Model
 
     protected $table = 'hotel';
 
-    protected $primaryKey = 'ID';
+    protected $primaryKey = 'id_hotel';
+    public $incrementing = false;
+    protected $keyType = 'string';
 
     public $timestamps = true;
 
     protected $fillable = [
-        'ID',
+        'id_hotel',
         'nom_etablissement',
         'gerant_etablissement',
-        'id_hotel',
         'adresse',
         'telephone',
         'e_mail',

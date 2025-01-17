@@ -29,7 +29,7 @@ class AuthController extends Controller
                 $hotel = Hotel::find($user->id_hotel);
                 $nom_hotel = $hotel ? $hotel->nom_etablissement : "";
             
-                $token = "zazazaza";
+                $token = $user->createToken('token-name', ['server:update'])->plainTextToken;
             
                 return response()->json([
                     'message' => 'Connexion réussie',
