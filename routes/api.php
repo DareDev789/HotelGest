@@ -20,6 +20,8 @@ Route::post('allMigrationsAgences', [AllMigrationsController::class, 'allMigrati
 Route::post('allMigrationsClients', [AllMigrationsController::class, 'allMigrationsClients']);
 Route::post('allMigrationsBungalows', [AllMigrationsController::class, 'allMigrationsBungalows']);
 Route::post('allMigrationsReservations', [AllMigrationsController::class, 'allMigrationsReservations']);
+Route::post('allMigrationsPrestaions', [AllMigrationsController::class, 'allMigrationsPrestaions']);
+Route::post('allMigrationsDetailsPrestaions', [AllMigrationsController::class, 'allMigrationsDetailsPrestaions']);
 Route::get('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 Route::post('register', [AuthController::class, 'register']);
 
@@ -32,5 +34,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('reservations')->group(function () {
         Route::get('/', [ReservationsController::class, 'getAllReservations']);
+        Route::get('/{id_reservation}', [ReservationsController::class, 'getOneReservation']);
     });
 });

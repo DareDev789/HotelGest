@@ -52,4 +52,8 @@ class SocieteReservation extends Model
     {
         return $this->hasMany(SocieteDetailsReservation::class, 'id_reservation', 'id_reservation');
     }
+    public function detailsPrestations()
+    {
+        return $this->hasMany(SocieteDetailsPrestations::class, 'id_reservation', 'id_reservation');
+    }
 }

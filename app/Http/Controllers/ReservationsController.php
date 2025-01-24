@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\SocieteDetailsPrestations;
 use App\Models\SocieteReservation;
+use App\Models\SocieteDetailsReservation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -65,6 +67,52 @@ class ReservationsController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Une erreur est survenue lors de la récupération des réservations.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+    public function getOneReservation(Request $request, $id_reservation)
+    {
+        try {
+            $user = Auth::user();
+            if (!$user || !$user->id_hotel) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Utilisateur non authentifié ou non associé à un hôtel.',
+                ], 401);
+            }
+
+
+            $reservation = SocieteReservation::with(['agence', 'client'])
+            ->where('id_hotel', $user->id_hotel)
+            ->where('id_reservation', $id_reservation)
+            ->get();
+
+            $detailReservation = SocieteDetailsReservation::with(['bungalow'])
+            ->where('id_hotel', $user->id_hotel)
+            ->where('id_reservation', $id_reservation)
+            ->get();
+
+            $detailPrestation = SocieteDetailsPrestations::with(['prestation'])
+            ->where('id_reservation', $id_reservation)
+            ->get();
+
+            return response()->json([
+                'success' => true,
+                'reservation' => $reservation,
+                'detailReservation' => $detailReservation,
+                'detailPrestation' => $detailPrestation,
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de la récupération de la réservation', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Une erreur est survenue lors de la récupération de la réservation.',
                 'error' => $e->getMessage(),
             ], 500);
         }

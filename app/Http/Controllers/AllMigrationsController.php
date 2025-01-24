@@ -7,8 +7,11 @@ use App\Models\HotUsers;
 use App\Models\Agences;
 use App\Models\Clients;
 use App\Models\Bungalows;
+use App\Models\ReservationPrestations;
 use App\Models\Reservations;
+use App\Models\Prestations;
 
+use App\Models\SocieteDetailsPrestations;
 use App\Models\SocieteUser;
 use App\Models\SocieteHotel;
 use App\Models\SocieteAgence;
@@ -16,6 +19,8 @@ use App\Models\SocieteClient;
 use App\Models\SocieteBungalow;
 use App\Models\SocieteReservation;
 use App\Models\SocieteDetailsReservation;
+use App\Models\SocietePrestations;
+use App\Models\SocieteDevise;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -238,6 +243,10 @@ class AllMigrationsController extends Controller
                 ->get();
 
             foreach ($reservations as $reservation) {
+
+                $devise = SocieteDevise::where('id_hotel', $reservation->id_hotel)
+                ->where('type', 'hotel')->first();
+
                 $existingReservation = SocieteReservation::where('id_reservation', $reservation->ident_reservation)->first();
 
                 if (!$existingReservation) {
@@ -247,13 +256,13 @@ class AllMigrationsController extends Controller
                     // Vérification si id_client existe dans la table SocieteClient
                     if ($reservation->id_client && !SocieteClient::find($reservation->id_client)) {
                         Log::warning('Client introuvable', ['id_client' => $reservation->id_client]);
-                        continue; // Passer à la réservation suivante
+                        continue;
                     }
 
                     // Vérification si id_agence existe dans la table SocieteAgence
                     if ($reservation->id_agence && !SocieteAgence::find($reservation->id_agence)) {
                         Log::warning('Agence introuvable', ['id_agence' => $reservation->id_agence]);
-                        continue; // Passer à la réservation suivante
+                        continue;
                     }
 
                     $id_client = empty($reservation->id_client) ? null : $reservation->id_client;
@@ -268,7 +277,7 @@ class AllMigrationsController extends Controller
                     $SocieteReservation->remise = $reservation->remise;
                     $SocieteReservation->taux = $reservation->taux;
                     $SocieteReservation->tva = $reservation->tva;
-                    $SocieteReservation->devise = $reservation->devise;
+                    $SocieteReservation->devise = $devise->devise;
                     $SocieteReservation->notes = $reservation->notes;
                     $SocieteReservation->taxe = $reservation->taxe;
                     $SocieteReservation->etat_reservation = $reservation->etat_reservation;
@@ -281,7 +290,7 @@ class AllMigrationsController extends Controller
 
                         if ($detailReservation->id_bungalow && !SocieteBungalow::find($detailReservation->id_bungalow)) {
                             Log::warning('Bungalow introuvable', ['id_bungalow' => $detailReservation->id_bungalow]);
-                            continue; // Passer à la réservation suivante
+                            continue;
                         }
 
                         $prix_bungalow = str_replace(' ', '', $detailReservation->prix_bungalow);
@@ -313,5 +322,93 @@ class AllMigrationsController extends Controller
             ], 500);
         }
     }
+
+    public function allMigrationsPrestaions(Request $request)
+    {
+        try {
+            $prestations = Prestations::All();
+
+            foreach ($prestations as $prestation) {
+                $existingPrestation = SocietePrestations::where('id', $prestation->ID)->first();
+
+                if (!$existingPrestation) {
+                    $SocietePrestations = new SocietePrestations();
+
+                    $SocietePrestations->id = $prestation->ID;
+                    $SocietePrestations->prestation = $prestation->prestation;
+                    $SocietePrestations->prix_prestation = $prestation->prix_prestation;
+                    $SocietePrestations->autre_info_prestation = $prestation->autre_info_prestation;
+                    $SocietePrestations->id_hotel = $prestation->id_hotel;
+
+                    $SocietePrestations->save();
+                }
+            }
+
+            return response()->json([
+                'message' => 'Migration des prestations effectuée avec succès.',
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de la migration des prestations', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'message' => 'Une erreur est survenue pendant la migration des prestations.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+    public function allMigrationsDetailsPrestaions(Request $request)
+    {
+        try {
+            $detailsPrestations = ReservationPrestations::all();
+
+            foreach ($detailsPrestations as $detailsPrestation) {
+                $existingDetailPrestation = SocieteDetailsPrestations::where('id', $detailsPrestation->ID_rPrestation)->first();
+
+                if (!$existingDetailPrestation) {
+                    // Vérification des clés étrangères
+                    if ($detailsPrestation->ident_reservation && !SocieteReservation::where('id_reservation', $detailsPrestation->ident_reservation)->first()) {
+                        Log::warning('reservation introuvable ou id_reservation vide', ['id_reservation' => $detailsPrestation->ident_reservation]);
+                        continue;
+                    }
+
+                    if ($detailsPrestation->ID_rPrestation && !SocietePrestations::where('id', $detailsPrestation->ID_rPrestation)->first()) {
+                        Log::warning('prestation introuvable ou id_prestation vide', ['id_prestation' => $detailsPrestation->ID_rPrestation]);
+                        continue;
+                    }
+
+                    // Nouvelle instance
+                    $SocieteDetailsPrestations = new SocieteDetailsPrestations();
+                    $SocieteDetailsPrestations->id = $detailsPrestation->ID_rPrestation;
+                    $SocieteDetailsPrestations->id_reservation = $detailsPrestation->ident_reservation;
+                    $SocieteDetailsPrestations->nb_personne = $detailsPrestation->nb_personne;
+                    $SocieteDetailsPrestations->id_prestation = $detailsPrestation->id_prestation;
+                    $SocieteDetailsPrestations->prix_prestation = $detailsPrestation->prix_prestation;
+                    $SocieteDetailsPrestations->date_in = $detailsPrestation->date_in;
+                    $SocieteDetailsPrestations->date_out = $detailsPrestation->date_out;
+                    $SocieteDetailsPrestations->prestation = $detailsPrestation->prestation;
+                    $SocieteDetailsPrestations->id_hotel = $detailsPrestation->id_hotel;
+
+                    // Sauvegarde
+                    $SocieteDetailsPrestations->save();
+                }
+            }
+
+            return response()->json([
+                'message' => 'Migration des details de prestation effectuée avec succès.',
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de la migration des details de prestation', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'message' => 'Une erreur est survenue pendant la migration des details de prestation.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
 
 }
