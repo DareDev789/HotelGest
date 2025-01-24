@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Accomptes;
 use App\Models\Hotel;
 use App\Models\HotUsers;
 use App\Models\Agences;
@@ -11,7 +12,12 @@ use App\Models\ReservationPrestations;
 use App\Models\Reservations;
 use App\Models\Prestations;
 
+use App\Models\ReservationsDivers;
+use App\Models\ServicesDivers;
+use App\Models\SocieteAccomptesReservations;
 use App\Models\SocieteDetailsPrestations;
+use App\Models\SocieteDetailsReservationsDivers;
+use App\Models\SocieteServicesDivers;
 use App\Models\SocieteUser;
 use App\Models\SocieteHotel;
 use App\Models\SocieteAgence;
@@ -245,7 +251,7 @@ class AllMigrationsController extends Controller
             foreach ($reservations as $reservation) {
 
                 $devise = SocieteDevise::where('id_hotel', $reservation->id_hotel)
-                ->where('type', 'hotel')->first();
+                    ->where('type', 'hotel')->first();
 
                 $existingReservation = SocieteReservation::where('id_reservation', $reservation->ident_reservation)->first();
 
@@ -374,24 +380,29 @@ class AllMigrationsController extends Controller
                         continue;
                     }
 
-                    if ($detailsPrestation->ID_rPrestation && !SocietePrestations::where('id', $detailsPrestation->ID_rPrestation)->first()) {
-                        Log::warning('prestation introuvable ou id_prestation vide', ['id_prestation' => $detailsPrestation->ID_rPrestation]);
+                    if ($detailsPrestation->id_prestation && !SocietePrestations::where('id', $detailsPrestation->id_prestation)->first()) {
+                        Log::warning('prestation introuvable ou id_prestation vide', ['id_prestation' => $detailsPrestation->id_prestation]);
                         continue;
                     }
 
-                    // Nouvelle instance
+                    $recupererDateReservations = SocieteDetailsReservation::where('id_reservation', $detailsPrestation->ident_reservation)->first();
+
+                    if (!$recupererDateReservations) {
+                        Log::warning('Date de réservation introuvable', ['id_reservation' => $detailsPrestation->ident_reservation]);
+                        continue; // Passer à l'itération suivante si aucune réservation n'est trouvée
+                    }
+
                     $SocieteDetailsPrestations = new SocieteDetailsPrestations();
                     $SocieteDetailsPrestations->id = $detailsPrestation->ID_rPrestation;
                     $SocieteDetailsPrestations->id_reservation = $detailsPrestation->ident_reservation;
                     $SocieteDetailsPrestations->nb_personne = $detailsPrestation->nb_personne;
                     $SocieteDetailsPrestations->id_prestation = $detailsPrestation->id_prestation;
                     $SocieteDetailsPrestations->prix_prestation = $detailsPrestation->prix_prestation;
-                    $SocieteDetailsPrestations->date_in = $detailsPrestation->date_in;
-                    $SocieteDetailsPrestations->date_out = $detailsPrestation->date_out;
+                    $SocieteDetailsPrestations->date_in = $recupererDateReservations->date_debut;
+                    $SocieteDetailsPrestations->date_out = $recupererDateReservations->date_fin;
                     $SocieteDetailsPrestations->prestation = $detailsPrestation->prestation;
                     $SocieteDetailsPrestations->id_hotel = $detailsPrestation->id_hotel;
 
-                    // Sauvegarde
                     $SocieteDetailsPrestations->save();
                 }
             }
@@ -410,5 +421,167 @@ class AllMigrationsController extends Controller
         }
     }
 
+    public function allMigrationsAccomptes(Request $request)
+    {
+        try {
+            $accomptes = Accomptes::all();
 
+            foreach ($accomptes as $accompte) {
+                $existingAccomptes = SocieteAccomptesReservations::where('id', $accompte->ID)->first();
+
+                if (!$existingAccomptes) {
+                    // Vérification des clés étrangères
+                    if ($accompte->ident_reservation && !SocieteReservation::where('id_reservation', $accompte->ident_reservation)->first()) {
+                        Log::warning('reservation introuvable ou id_reservation vide', ['id_reservation' => $accompte->ident_reservation]);
+                        continue;
+                    }
+
+                    if ($accompte->id_hotel && !SocieteHotel::where('id_hotel', $accompte->id_hotel)->first()) {
+                        Log::warning('hotel introuvable ou hotel vide', ['id_hotel' => $accompte->id_hotel]);
+                        continue;
+                    }
+
+                    $recupererIdUser = SocieteUser::where('username', $accompte->save_by)->first();
+
+                    if (!$recupererIdUser) {
+                        Log::warning('User introuvable', ['username' => $accompte->save_by]);
+                        continue; // Passer à l'itération suivante si aucune réservation n'est trouvée
+                    }
+
+                    $societeAccomptesReservations = new SocieteAccomptesReservations();
+
+                    $societeAccomptesReservations->id = $accompte->ID;
+                    $societeAccomptesReservations->id_reservation = $accompte->ident_reservation;
+                    $societeAccomptesReservations->montant = $accompte->montant;
+                    $societeAccomptesReservations->save_by = $recupererIdUser->id;
+                    $societeAccomptesReservations->created_at = $accompte->date_save;
+                    $societeAccomptesReservations->id_hotel = $accompte->id_hotel;
+
+                    $societeAccomptesReservations->save();
+                }
+            }
+
+            return response()->json([
+                'message' => 'Migration des Accomptes effectuée avec succès.',
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de la migration des accomptes', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'message' => 'Une erreur est survenue pendant la migration des Accomptes.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+    public function allMigrationsDivers(Request $request)
+    {
+        try {
+            $divers = ServicesDivers::where('etat', '1')->get();
+
+            foreach ($divers as $diver) {
+                $existingDiver = SocieteServicesDivers::where('id', $diver->ID)->first();
+
+                if (!$existingDiver) {
+                    if ($diver->id_hotel && !SocieteHotel::where('id_hotel', $diver->id_hotel)->first()) {
+                        Log::warning('hotel introuvable ou hotel vide', ['id_hotel' => $diver->id_hotel]);
+                        continue;
+                    }
+                    if (!$diver->id_hotel) {
+                        Log::warning('hotel introuvable ou hotel vide', ['id_hotel' => $diver->id_hotel]);
+                        continue;
+                    }
+
+                    $SocieteServicesDivers = new SocieteServicesDivers();
+
+                    $SocieteServicesDivers->id = $diver->ID;
+                    $SocieteServicesDivers->designation = $diver->designation;
+                    $SocieteServicesDivers->description = $diver->description;
+                    $SocieteServicesDivers->prixPax = $diver->prix_jour;
+                    $SocieteServicesDivers->id_hotel = $diver->id_hotel;
+
+                    $SocieteServicesDivers->save();
+                }
+            }
+
+            return response()->json([
+                'message' => 'Migration des services divers effectuée avec succès.',
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de la migration des services divers', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'message' => 'Une erreur est survenue pendant la migration des services divers.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function allMigrationsReservationsDivers(Request $request)
+    {
+        try {
+            $Reservationsdivers = ReservationsDivers::all();
+
+            foreach ($Reservationsdivers as $Reservationsdiver) {
+                $existingReserDiver = SocieteDetailsReservationsDivers::where('id', $Reservationsdiver->id_commande)->first();
+
+                if (!$existingReserDiver) {
+                    if ($Reservationsdiver->id_hotel && !SocieteHotel::where('id_hotel', $Reservationsdiver->id_hotel)->first()) {
+                        Log::warning('hotel introuvable ou Reservation vide', ['id_hotel' => $Reservationsdiver->id_hotel]);
+                        continue;
+                    }
+                    if (!$Reservationsdiver->id_hotel) {
+                        Log::warning('hotel introuvable ou Reservation vide', ['id_hotel' => $Reservationsdiver->id_hotel]);
+                        continue;
+                    }
+
+                    if ($Reservationsdiver->ident_reservation && !SocieteReservation::where('id_reservation', $Reservationsdiver->ident_reservation)->first()) {
+                        Log::warning('Reservation introuvable ou Reservation vide', ['id_reservation' => $Reservationsdiver->ident_reservation]);
+                        continue;
+                    }
+                    if (!$Reservationsdiver->ident_reservation) {
+                        Log::warning('Reservation introuvable ou Reservation vide', ['id_reservation' => $Reservationsdiver->ident_reservation]);
+                        continue;
+                    }
+
+                    $getIdDiver = SocieteServicesDivers::where('designation', $Reservationsdiver->designation)
+                    ->where('id_hotel', $Reservationsdiver->id_hotel)
+                    ->first();
+
+                    if (!$getIdDiver->id) {
+                        Log::warning('Services Divers introuvable', ['prestation' => $Reservationsdiver->designation]);
+                        continue;
+                    }
+
+                    $SocieteDetailsReservationsDivers = new SocieteDetailsReservationsDivers();
+
+                    $SocieteDetailsReservationsDivers->id = $Reservationsdiver->id_commande;
+                    $SocieteDetailsReservationsDivers->designation = $Reservationsdiver->designation;
+                    $SocieteDetailsReservationsDivers->id_reservation = $Reservationsdiver->ident_reservation;
+                    $SocieteDetailsReservationsDivers->id_hotel = $Reservationsdiver->id_hotel;
+                    $SocieteDetailsReservationsDivers->prix_jour = $Reservationsdiver->prix_jour;
+                    $SocieteDetailsReservationsDivers->pack = $Reservationsdiver->pack;
+                    $SocieteDetailsReservationsDivers->id_diver = $getIdDiver->id;
+                    $SocieteDetailsReservationsDivers->created_at = $Reservationsdiver->date_commande;
+
+                    $SocieteDetailsReservationsDivers->save();
+                }
+            }
+
+            return response()->json([
+                'message' => 'Migration des Reservations divers effectuée avec succès.',
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de la migration des Reservations divers', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'message' => 'Une erreur est survenue pendant la migration des Reservations divers.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }

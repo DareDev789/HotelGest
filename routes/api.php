@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AgencesController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
@@ -22,6 +23,10 @@ Route::post('allMigrationsBungalows', [AllMigrationsController::class, 'allMigra
 Route::post('allMigrationsReservations', [AllMigrationsController::class, 'allMigrationsReservations']);
 Route::post('allMigrationsPrestaions', [AllMigrationsController::class, 'allMigrationsPrestaions']);
 Route::post('allMigrationsDetailsPrestaions', [AllMigrationsController::class, 'allMigrationsDetailsPrestaions']);
+Route::post('allMigrationsAccomptes', [AllMigrationsController::class, 'allMigrationsAccomptes']);
+Route::post('allMigrationsDivers', [AllMigrationsController::class, 'allMigrationsDivers']);
+Route::post('allMigrationsReservationsDivers', [AllMigrationsController::class, 'allMigrationsReservationsDivers']);
+
 Route::get('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 Route::post('register', [AuthController::class, 'register']);
 
@@ -35,5 +40,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('reservations')->group(function () {
         Route::get('/', [ReservationsController::class, 'getAllReservations']);
         Route::get('/{id_reservation}', [ReservationsController::class, 'getOneReservation']);
+        Route::put('/confirmReservation/{id_reservation}', [ReservationsController::class, 'ConfirmOneReservation']);
+    });
+
+    Route::prefix('agences')->group(function () {
+        Route::get('/', [AgencesController::class, 'getAllAgences']);
     });
 });

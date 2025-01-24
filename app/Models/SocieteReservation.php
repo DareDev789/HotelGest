@@ -56,4 +56,12 @@ class SocieteReservation extends Model
     {
         return $this->hasMany(SocieteDetailsPrestations::class, 'id_reservation', 'id_reservation');
     }
+    public function detailsServicesDivers()
+    {
+        return $this->hasMany(SocieteDetailsReservationsDivers::class, 'id_reservation', 'id_reservation');
+    }
+    public function accomptes()
+    {
+        return $this->hasMany(SocieteAccomptesReservations::class, 'id_reservation', 'id_reservation');
+    }
 }
