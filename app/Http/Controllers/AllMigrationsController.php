@@ -18,6 +18,7 @@ use App\Models\SocieteAccomptesReservations;
 use App\Models\SocieteDetailsPrestations;
 use App\Models\SocieteDetailsReservationsDivers;
 use App\Models\SocieteServicesDivers;
+use App\Models\SocieteTypeBungalow;
 use App\Models\SocieteUser;
 use App\Models\SocieteHotel;
 use App\Models\SocieteAgence;
@@ -28,6 +29,7 @@ use App\Models\SocieteDetailsReservation;
 use App\Models\SocietePrestations;
 use App\Models\SocieteDevise;
 
+use App\Models\TypeBungalow;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
@@ -580,6 +582,65 @@ class AllMigrationsController extends Controller
 
             return response()->json([
                 'message' => 'Une erreur est survenue pendant la migration des Reservations divers.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function allMigrationsTypeBungalows(Request $request)
+    {
+        try {
+            $typeBungalows = TypeBungalow::all();
+
+            foreach ($typeBungalows as $typeBungalow) {
+                $existingtypeBungalows = SocieteTypeBungalow::where('id', $typeBungalow->ID)->first();
+
+                if (!$existingtypeBungalows) {
+                    if ($typeBungalow->id_hotel && !SocieteHotel::where('id_hotel', $typeBungalow->id_hotel)->first()) {
+                        Log::warning('hotel introuvable ou hotel vide', ['id_hotel' => $typeBungalow->id_hotel]);
+                        continue;
+                    }
+                    if (!$typeBungalow->id_hotel) {
+                        Log::warning('hotel introuvable ou hotel vide', ['id_hotel' => $typeBungalow->id_hotel]);
+                        continue;
+                    }
+
+                    if ($typeBungalow->ID_bungalow && !SocieteBungalow::where('id', $typeBungalow->ID_bungalow)->first()) {
+                        Log::warning('hotel introuvable ou hotel vide', ['id' => $typeBungalow->ID_bungalow]);
+                        continue;
+                    }
+                    if (!$typeBungalow->ID_bungalow) {
+                        Log::warning('hotel introuvable ou hotel vide', ['id' => $typeBungalow->ID_bungalow]);
+                        continue;
+                    }
+
+                    $SocieteTypeBungalow = new SocieteTypeBungalow();
+                    if(!$typeBungalow->prixAgence){
+                        $prix_agence = $typeBungalow->prix_bungalow;
+                    }else{
+                        $prix_agence = $typeBungalow->prixAgence;
+                    }
+
+                    $SocieteTypeBungalow->id = $typeBungalow->ID;
+                    $SocieteTypeBungalow->id_bungalow = $typeBungalow->ID_bungalow;
+                    $SocieteTypeBungalow->type_bungalow = $typeBungalow->type_bungalow;
+                    $SocieteTypeBungalow->prix_particulier = $typeBungalow->prix_bungalow;
+                    $SocieteTypeBungalow->prix_agence = $prix_agence;
+                    $SocieteTypeBungalow->id_hotel = $typeBungalow->prix_jour;
+
+                    $SocieteTypeBungalow->save();
+                }
+            }
+
+            return response()->json([
+                'message' => 'Migration des types de bungalow effectuée avec succès.',
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de la migration des types de bungalow', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'message' => 'Une erreur est survenue pendant la migration des types de bungalow.',
                 'error' => $e->getMessage(),
             ], 500);
         }

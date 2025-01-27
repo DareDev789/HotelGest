@@ -26,4 +26,9 @@ class SocieteBungalow extends Model
     {
         return $this->hasMany(SocieteDetailsReservation::class, 'id_bungalow', 'id');
     }
+
+    public function typeBungalow()
+    {
+        return $this->hasMany(SocieteTypeBungalow::class, 'id_bungalow', 'id');
+    }
 }

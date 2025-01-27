@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\AgencesController;
+use App\Http\Controllers\ClientsController;
+use App\Http\Controllers\ServicesDivers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
@@ -26,6 +28,7 @@ Route::post('allMigrationsDetailsPrestaions', [AllMigrationsController::class, '
 Route::post('allMigrationsAccomptes', [AllMigrationsController::class, 'allMigrationsAccomptes']);
 Route::post('allMigrationsDivers', [AllMigrationsController::class, 'allMigrationsDivers']);
 Route::post('allMigrationsReservationsDivers', [AllMigrationsController::class, 'allMigrationsReservationsDivers']);
+Route::post('allMigrationsTypeBungalows', [AllMigrationsController::class, 'allMigrationsTypeBungalows']);
 
 Route::get('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 Route::post('register', [AuthController::class, 'register']);
@@ -34,6 +37,9 @@ Route::post('register', [AuthController::class, 'register']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('bungalows')->group(function () {
         Route::get('/', [BungalowsController::class, 'getAllBungalows']);
+        Route::post('/', [BungalowsController::class, 'createOneBungalow']);
+        Route::put('/{id}', [BungalowsController::class, 'updateBungalow']);
+        Route::delete('/{id}', [BungalowsController::class, 'deleteBungalow']);
         Route::get('/{id}', [BungalowsController::class, 'getOneBungalow']);
     });
 
@@ -45,5 +51,18 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('agences')->group(function () {
         Route::get('/', [AgencesController::class, 'getAllAgences']);
+        Route::put('/{id}', [AgencesController::class, 'updateAgence']);
+    });
+
+
+    Route::prefix('clients')->group(function () {
+        Route::get('/', [ClientsController::class, 'getAllClients']);
+        Route::put('/{id}', [ClientsController::class, 'updateClients']);
+    });
+
+
+    Route::prefix('divers')->group(function () {
+        Route::get('/', [ServicesDivers::class, 'getAllServicesDivers']);
+        Route::put('/{id}', [ServicesDivers::class, 'updateserviceDivers']);
     });
 });
