@@ -16,6 +16,8 @@ class SocieteDetailsReservation extends Model
         'prix_bungalow',
         'id_hotel',
         'nb_personne',
+        'date_debut',
+        'date_fin',
     ];
 
     public function reservation()

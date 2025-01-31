@@ -88,4 +88,71 @@ class AgencesController extends Controller
             ], 500);
         }
     }
+
+    public function deleteAgence($id)
+    {
+        try {
+            $user = Auth::user();
+
+            if ($user && $user->id_hotel) {
+                $agence = SocieteAgence::findOrFail($id);
+
+                $agence->delete();
+
+                return response()->json(['message' => "Agence supprimé avec succès !"], 200);
+            }
+
+            return response()->json(['message' => 'Aucun hôtel associé à cet utilisateur.'], 401);
+        } catch (\Exception $e) {
+            Log::error('Une erreur est survenue lors de la suppression de l\'agence.', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'message' => 'Une erreur est survenue lors de la suppression de l\'agence.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function CreateAgence(Request $request)
+    {
+        try {
+            $user = Auth::user();
+
+            if ($user && $user->id_hotel) {
+                $request->validate([
+                    'email_agence' => 'nullable|string|max:255',
+                    'telephone_agence' => "nullable|string|max:250",
+                    'site_web_agence' => "nullable|string|max:250",
+                    'nom_agence' => "required|string|max:250",
+                    'autres_info_agence' => "nullable|string|max:250",
+                    'bg_color' => "nullable|string|max:250",
+                    'text_color' => "nullable|string|max:250",
+                ]);
+
+
+                $agence=SocieteAgence::create([
+                    'email_agence' => $request->email_agence,
+                    'telephone_agence' => $request->telephone_agence,
+                    'site_web_agence' => $request->site_web_agence,
+                    'nom_agence' => $request->nom_agence,
+                    'autres_info_agence' => $request->autres_info_agence,
+                    'bg_color' => $request->bg_color,
+                    'text_color' => $request->text_color,
+                    'id_hotel' => $user->id_hotel,
+                ]);
+
+
+                return response()->json(['message' => "Agence créé avec succès !"], 200);
+            }
+
+            return response()->json(['message' => 'Aucun hôtel associé à cet utilisateur.'], 401);
+        } catch (\Exception $e) {
+            Log::error('Une erreur est survenue lors de l\'ajout de l\' Agence', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'message' => 'Une erreur est survenue lors de l\'ajout de l\' Agence.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }

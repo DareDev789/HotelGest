@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AgencesController;
 use App\Http\Controllers\ClientsController;
+use App\Http\Controllers\PrestationsController;
 use App\Http\Controllers\ServicesDivers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -45,24 +46,40 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('reservations')->group(function () {
         Route::get('/', [ReservationsController::class, 'getAllReservations']);
+        Route::post('/', [ReservationsController::class, 'createReservation']);
         Route::get('/{id_reservation}', [ReservationsController::class, 'getOneReservation']);
+        Route::delete('/{id_reservation}', [ReservationsController::class, 'AnnulerOneReservation']);
         Route::put('/confirmReservation/{id_reservation}', [ReservationsController::class, 'ConfirmOneReservation']);
     });
 
     Route::prefix('agences')->group(function () {
         Route::get('/', [AgencesController::class, 'getAllAgences']);
+        Route::post('/', [AgencesController::class, 'CreateAgence']);
         Route::put('/{id}', [AgencesController::class, 'updateAgence']);
+        Route::delete('/{id}', [AgencesController::class, 'deleteAgence']);
     });
 
 
     Route::prefix('clients')->group(function () {
         Route::get('/', [ClientsController::class, 'getAllClients']);
+        Route::post('/', [ClientsController::class, 'CreateClients']);
         Route::put('/{id}', [ClientsController::class, 'updateClients']);
+        Route::delete('/{id}', [ClientsController::class, 'deleteClient']);
     });
 
 
     Route::prefix('divers')->group(function () {
         Route::get('/', [ServicesDivers::class, 'getAllServicesDivers']);
+        Route::post('/', [ServicesDivers::class, 'CreateserviceDivers']);
         Route::put('/{id}', [ServicesDivers::class, 'updateserviceDivers']);
+        Route::delete('/{id}', [ServicesDivers::class, 'DeleteserviceDivers']);
+    });
+
+
+    Route::prefix('prestations')->group(function () {
+        Route::get('/', [PrestationsController::class, 'getAllprestations']);
+        Route::post('/', [PrestationsController::class, 'CreatePrestation']);
+        Route::put('/{id}', [PrestationsController::class, 'updatePrestations']);
+        Route::delete('/{id}', [PrestationsController::class, 'deletePrestation']);
     });
 });

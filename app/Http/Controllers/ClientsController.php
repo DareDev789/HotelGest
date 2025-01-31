@@ -85,4 +85,67 @@ class ClientsController extends Controller
         }
     }
 
+
+    public function CreateClients(Request $request)
+    {
+        try {
+            $user = Auth::user();
+
+            if ($user && $user->id_hotel) {
+                $request->validate([
+                    'nom_client' => 'required|string|max:255',
+                    'adresse' => "nullable|string|max:250",
+                    'email' => "nullable|string|max:250",
+                    'telephone' => "nullable|string|max:250",
+                    'autres_info_client' => "nullable|string|max:250",
+                ]);
+
+                $client= SocieteClient::create([
+                    'nom_client' => $request->nom_client,
+                    'adresse' => $request->adresse,
+                    'email' => $request->email,
+                    'telephone' => $request->telephone,
+                    'autres_info_client' => $request->autres_info_client,
+                    'id_hotel' => $user->id_hotel,
+                ]);
+
+
+                return response()->json(['message' => "client ajouté avec succès !"], 200);
+            }
+
+            return response()->json(['message' => 'Aucun hôtel associé à cet utilisateur.'], 401);
+        } catch (\Exception $e) {
+            Log::error('Une erreur est survenue lors de l\'ajout du client', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'message' => 'Une erreur est survenue lors de l\'ajout du client.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function deleteClient($id)
+    {
+        try {
+            $user = Auth::user();
+
+            if ($user && $user->id_hotel) {
+                $client = SocieteClient::findOrFail($id);
+
+                $client->delete();
+
+                return response()->json(['message' => "Client supprimé avec succès !"], 200);
+            }
+
+            return response()->json(['message' => 'Aucun hôtel associé à cet utilisateur.'], 401);
+        } catch (\Exception $e) {
+            Log::error('Une erreur est survenue lors de la suppression du Client', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'message' => 'Une erreur est survenue lors de la suppression du Client.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
 }
