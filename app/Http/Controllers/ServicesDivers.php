@@ -78,7 +78,7 @@ class ServicesDivers extends Controller
             if ($user && $user->id_hotel) {
                 $request->validate([
                     'designation' => 'required|string|max:255',
-                    'description' => "nullable|string|max:50",
+                    'description' => "nullable|string",
                     'prixPax' => 'required|numeric|min:1',
                 ]);
 
@@ -139,7 +139,7 @@ class ServicesDivers extends Controller
             if ($user && $user->id_hotel) {
                 $request->validate([
                     'designation' => 'required|string|max:255',
-                    'description' => "nullable|string|max:50",
+                    'description' => "nullable|string",
                     'prixPax' => 'required|numeric|min:1',
                 ]);
 

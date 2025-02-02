@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Accomptes;
+use App\Models\Factures;
 use App\Models\Hotel;
 use App\Models\HotUsers;
 use App\Models\Agences;
@@ -17,7 +18,9 @@ use App\Models\ServicesDivers;
 use App\Models\SocieteAccomptesReservations;
 use App\Models\SocieteDetailsPrestations;
 use App\Models\SocieteDetailsReservationsDivers;
+use App\Models\SocieteFactures;
 use App\Models\SocieteServicesDivers;
+use App\Models\SocieteSettingFactures;
 use App\Models\SocieteTypeBungalow;
 use App\Models\SocieteUser;
 use App\Models\SocieteHotel;
@@ -162,13 +165,19 @@ class AllMigrationsController extends Controller
                 $existingClient = SocieteClient::where('id', $client->id_client)->first();
 
                 if (!$existingClient) {
+
+                    if ($client->Id_hotel && !SocieteHotel::where('id_hotel', $client->Id_hotel)->first()) {
+                        Log::warning('Client introuvable', ['id_client' => $client->Id_hotel]);
+                        continue;
+                    }
+
                     $SocieteClient = new SocieteClient();
 
                     $SocieteClient->id = $client->ID;
                     $SocieteClient->nom_client = $client->nom_client;
                     $SocieteClient->email = $client->email;
                     $SocieteClient->telephone = $client->telephone;
-                    $SocieteClient->id_hotel = $client->id_hotel;
+                    $SocieteClient->id_hotel = $client->Id_hotel;
                     $SocieteClient->autres_info_client = $client->autres_info_client;
 
                     $SocieteClient->save();
@@ -270,6 +279,12 @@ class AllMigrationsController extends Controller
                     // Vérification si id_agence existe dans la table SocieteAgence
                     if ($reservation->id_agence && !SocieteAgence::find($reservation->id_agence)) {
                         Log::warning('Agence introuvable', ['id_agence' => $reservation->id_agence]);
+                        continue;
+                    }
+
+                    // Vérification si devise est null
+                    if (!$devise) {
+                        Log::warning('Devise introuvable', ['id_hotel' => $reservation->id_hotel]);
                         continue;
                     }
 
@@ -429,38 +444,62 @@ class AllMigrationsController extends Controller
             $accomptes = Accomptes::all();
 
             foreach ($accomptes as $accompte) {
-                $existingAccomptes = SocieteAccomptesReservations::where('id', $accompte->ID)->first();
+                if (SocieteAccomptesReservations::where('id', $accompte->ID)->exists()) {
+                    continue; // Passer si l'acompte existe déjà
+                }
 
-                if (!$existingAccomptes) {
-                    // Vérification des clés étrangères
-                    if ($accompte->ident_reservation && !SocieteReservation::where('id_reservation', $accompte->ident_reservation)->first()) {
-                        Log::warning('reservation introuvable ou id_reservation vide', ['id_reservation' => $accompte->ident_reservation]);
-                        continue;
-                    }
+                // Vérification des clés étrangères
+                if ($accompte->ident_reservation && !SocieteReservation::where('id_reservation', $accompte->ident_reservation)->exists()) {
+                    Log::warning('Réservation introuvable', ['id_reservation' => $accompte->ident_reservation]);
+                    continue;
+                }
 
-                    if ($accompte->id_hotel && !SocieteHotel::where('id_hotel', $accompte->id_hotel)->first()) {
-                        Log::warning('hotel introuvable ou hotel vide', ['id_hotel' => $accompte->id_hotel]);
-                        continue;
-                    }
+                if ($accompte->id_hotel && !SocieteHotel::where('id_hotel', $accompte->id_hotel)->exists()) {
+                    Log::warning('Hôtel introuvable', ['id_hotel' => $accompte->id_hotel]);
+                    continue;
+                }
 
-                    $recupererIdUser = SocieteUser::where('username', $accompte->save_by)->first();
+                $recupererIdUser = SocieteUser::where('username', $accompte->save_by)->first();
 
-                    if (!$recupererIdUser) {
-                        Log::warning('User introuvable', ['username' => $accompte->save_by]);
-                        continue; // Passer à l'itération suivante si aucune réservation n'est trouvée
-                    }
+                if (!$recupererIdUser) {
+                    Log::warning('Utilisateur introuvable', ['username' => $accompte->save_by]);
+                    continue;
+                }
 
-                    $societeAccomptesReservations = new SocieteAccomptesReservations();
+                $facture = Factures::where('ident_reservation', $accompte->ident_reservation)
+                    ->where('id_hotel', $accompte->id_hotel)
+                    ->where('link', '!=', '')
+                    ->first();
 
-                    $societeAccomptesReservations->id = $accompte->ID;
-                    $societeAccomptesReservations->id_reservation = $accompte->ident_reservation;
-                    $societeAccomptesReservations->montant = $accompte->montant;
-                    $societeAccomptesReservations->save_by = $recupererIdUser->id;
-                    $societeAccomptesReservations->created_at = $accompte->date_save;
-                    $societeAccomptesReservations->id_hotel = $accompte->id_hotel;
+                // Création de l'objet
+                $societeAccomptesReservations = new SocieteAccomptesReservations();
+                $societeAccomptesReservations->id_reservation = $accompte->ident_reservation;
+                $societeAccomptesReservations->montant = $accompte->montant;
+                $societeAccomptesReservations->save_by = $recupererIdUser->id;
+                $societeAccomptesReservations->created_at = $accompte->date_save;
+                $societeAccomptesReservations->id_hotel = $accompte->id_hotel;
+                $societeAccomptesReservations->paid = true;
 
+                // **Sauvegarder l'accompte pour générer son ID**
+                $societeAccomptesReservations->save();
+
+                if ($facture) {
+                    $societeFacture = new SocieteFactures();
+                    $societeFacture->id_accompte = $societeAccomptesReservations->id; // **L'ID est maintenant disponible**
+                    $societeFacture->date_facture = $facture->date_facture;
+                    $societeFacture->user = $recupererIdUser->id;
+                    $societeFacture->num_facture = $facture->num_facture;
+                    $societeFacture->created_at = $facture->date_facture;
+                    $societeFacture->link = $facture->link;
+                    $societeFacture->id_hotel = $accompte->id_hotel;
+
+                    $societeFacture->save(); // **On sauvegarde la facture après**
+
+                    // Mettre à jour l'ID de la facture dans l'accompte
+                    $societeAccomptesReservations->facture_id = $societeFacture->id;
                     $societeAccomptesReservations->save();
                 }
+
             }
 
             return response()->json([
@@ -476,6 +515,7 @@ class AllMigrationsController extends Controller
             ], 500);
         }
     }
+
 
 
     public function allMigrationsDivers(Request $request)
@@ -550,8 +590,8 @@ class AllMigrationsController extends Controller
                     }
 
                     $getIdDiver = SocieteServicesDivers::where('designation', $Reservationsdiver->designation)
-                    ->where('id_hotel', $Reservationsdiver->id_hotel)
-                    ->first();
+                        ->where('id_hotel', $Reservationsdiver->id_hotel)
+                        ->first();
 
                     if (!$getIdDiver->id) {
                         Log::warning('Services Divers introuvable', ['prestation' => $Reservationsdiver->designation]);
@@ -590,45 +630,40 @@ class AllMigrationsController extends Controller
     public function allMigrationsTypeBungalows(Request $request)
     {
         try {
+            // Retrieve all type bungalows
             $typeBungalows = TypeBungalow::all();
 
             foreach ($typeBungalows as $typeBungalow) {
-                $existingtypeBungalows = SocieteTypeBungalow::where('id', $typeBungalow->ID)->first();
+                // Check if the type bungalow already exists in SocieteTypeBungalow
+                $existingTypeBungalow = SocieteTypeBungalow::where('id', $typeBungalow->ID)->first();
 
-                if (!$existingtypeBungalows) {
-                    if ($typeBungalow->id_hotel && !SocieteHotel::where('id_hotel', $typeBungalow->id_hotel)->first()) {
-                        Log::warning('hotel introuvable ou hotel vide', ['id_hotel' => $typeBungalow->id_hotel]);
-                        continue;
-                    }
-                    if (!$typeBungalow->id_hotel) {
-                        Log::warning('hotel introuvable ou hotel vide', ['id_hotel' => $typeBungalow->id_hotel]);
-                        continue;
-                    }
+                if (!$existingTypeBungalow) {
+                    // Retrieve the associated SocieteBungalow
+                    $societeBungalow = SocieteBungalow::where('id', $typeBungalow->ID_bungalow)->first();
 
-                    if ($typeBungalow->ID_bungalow && !SocieteBungalow::where('id', $typeBungalow->ID_bungalow)->first()) {
-                        Log::warning('hotel introuvable ou hotel vide', ['id' => $typeBungalow->ID_bungalow]);
+                    // Validate associated hotel and bungalow
+                    if (!$societeBungalow) {
+                        Log::warning('Bungalow introuvable', ['id' => $typeBungalow->ID_bungalow]);
                         continue;
                     }
-                    if (!$typeBungalow->ID_bungalow) {
-                        Log::warning('hotel introuvable ou hotel vide', ['id' => $typeBungalow->ID_bungalow]);
+                    if ($societeBungalow->id_hotel && !SocieteHotel::find($societeBungalow->id_hotel)) {
+                        Log::warning('Hotel introuvable ou hotel vide', ['id_hotel' => $societeBungalow->id_hotel]);
                         continue;
                     }
 
-                    $SocieteTypeBungalow = new SocieteTypeBungalow();
-                    if(!$typeBungalow->prixAgence){
-                        $prix_agence = $typeBungalow->prix_bungalow;
-                    }else{
-                        $prix_agence = $typeBungalow->prixAgence;
-                    }
+                    // Create a new SocieteTypeBungalow
+                    $societeTypeBungalow = new SocieteTypeBungalow();
+                    $prixAgence = $typeBungalow->prixAgence ? $typeBungalow->prixAgence : $typeBungalow->prix_bungalow;
 
-                    $SocieteTypeBungalow->id = $typeBungalow->ID;
-                    $SocieteTypeBungalow->id_bungalow = $typeBungalow->ID_bungalow;
-                    $SocieteTypeBungalow->type_bungalow = $typeBungalow->type_bungalow;
-                    $SocieteTypeBungalow->prix_particulier = $typeBungalow->prix_bungalow;
-                    $SocieteTypeBungalow->prix_agence = $prix_agence;
-                    $SocieteTypeBungalow->id_hotel = $typeBungalow->prix_jour;
+                    $societeTypeBungalow->id = $typeBungalow->ID;
+                    $societeTypeBungalow->id_bungalow = $typeBungalow->ID_bungalow;
+                    $societeTypeBungalow->type_bungalow = $typeBungalow->type_bungalow;
+                    $societeTypeBungalow->prix_particulier = $typeBungalow->prix_bungalow;
+                    $societeTypeBungalow->prix_agence = $prixAgence;
+                    $societeTypeBungalow->id_hotel = $societeBungalow->id_hotel;
 
-                    $SocieteTypeBungalow->save();
+                    // Save the new SocieteTypeBungalow
+                    $societeTypeBungalow->save();
                 }
             }
 
@@ -637,10 +672,47 @@ class AllMigrationsController extends Controller
             ], 200);
 
         } catch (\Exception $e) {
+            // Log any errors during the migration process
             Log::error('Erreur lors de la migration des types de bungalow', ['error' => $e->getMessage()]);
 
             return response()->json([
                 'message' => 'Une erreur est survenue pendant la migration des types de bungalow.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+
+    public function allMigrationsFactureSetting(Request $request)
+    {
+        try {
+            $hotels = Hotel::all();
+
+            foreach ($hotels as $hotel) {
+                $existinghotel = SocieteSettingFactures::where('id_hotel', $hotel->id_hotel)->first();
+
+                if (!$existinghotel) {
+
+                    $SocieteSettingFactures = new SocieteSettingFactures();
+
+                    $SocieteSettingFactures->id_hotel = $hotel->id_hotel;
+                    $SocieteSettingFactures->entete = $hotel->entete1;
+                    $SocieteSettingFactures->footer = $hotel->pied1;
+
+                    $SocieteSettingFactures->save();
+                }
+            }
+
+            return response()->json([
+                'message' => 'Migration des factures effectuée avec succès.',
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de la migration des factures', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'message' => 'Une erreur est survenue pendant la migration des factures.',
                 'error' => $e->getMessage(),
             ], 500);
         }

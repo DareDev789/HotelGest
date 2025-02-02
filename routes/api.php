@@ -1,7 +1,10 @@
 <?php
 
+use App\Http\Controllers\AccomptesController;
 use App\Http\Controllers\AgencesController;
 use App\Http\Controllers\ClientsController;
+use App\Http\Controllers\FacturesController;
+use App\Http\Controllers\HotelController;
 use App\Http\Controllers\PrestationsController;
 use App\Http\Controllers\ServicesDivers;
 use Illuminate\Http\Request;
@@ -23,13 +26,14 @@ Route::post('allMigrationsUsers', [AllMigrationsController::class, 'allMigration
 Route::post('allMigrationsAgences', [AllMigrationsController::class, 'allMigrationsAgences']);
 Route::post('allMigrationsClients', [AllMigrationsController::class, 'allMigrationsClients']);
 Route::post('allMigrationsBungalows', [AllMigrationsController::class, 'allMigrationsBungalows']);
-Route::post('allMigrationsReservations', [AllMigrationsController::class, 'allMigrationsReservations']);
 Route::post('allMigrationsPrestaions', [AllMigrationsController::class, 'allMigrationsPrestaions']);
-Route::post('allMigrationsDetailsPrestaions', [AllMigrationsController::class, 'allMigrationsDetailsPrestaions']);
-Route::post('allMigrationsAccomptes', [AllMigrationsController::class, 'allMigrationsAccomptes']);
 Route::post('allMigrationsDivers', [AllMigrationsController::class, 'allMigrationsDivers']);
-Route::post('allMigrationsReservationsDivers', [AllMigrationsController::class, 'allMigrationsReservationsDivers']);
 Route::post('allMigrationsTypeBungalows', [AllMigrationsController::class, 'allMigrationsTypeBungalows']);
+Route::post('allMigrationsFactureSetting', [AllMigrationsController::class, 'allMigrationsFactureSetting']);
+Route::post('allMigrationsReservations', [AllMigrationsController::class, 'allMigrationsReservations']);
+Route::post('allMigrationsDetailsPrestaions', [AllMigrationsController::class, 'allMigrationsDetailsPrestaions']);
+Route::post('allMigrationsReservationsDivers', [AllMigrationsController::class, 'allMigrationsReservationsDivers']);
+Route::post('allMigrationsAccomptes', [AllMigrationsController::class, 'allMigrationsAccomptes']);
 
 Route::get('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 Route::post('register', [AuthController::class, 'register']);
@@ -44,13 +48,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id}', [BungalowsController::class, 'getOneBungalow']);
     });
 
-    Route::prefix('reservations')->group(function () {
-        Route::get('/', [ReservationsController::class, 'getAllReservations']);
-        Route::post('/', [ReservationsController::class, 'createReservation']);
-        Route::get('/{id_reservation}', [ReservationsController::class, 'getOneReservation']);
-        Route::delete('/{id_reservation}', [ReservationsController::class, 'AnnulerOneReservation']);
-        Route::put('/confirmReservation/{id_reservation}', [ReservationsController::class, 'ConfirmOneReservation']);
-    });
 
     Route::prefix('agences')->group(function () {
         Route::get('/', [AgencesController::class, 'getAllAgences']);
@@ -81,5 +78,35 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/', [PrestationsController::class, 'CreatePrestation']);
         Route::put('/{id}', [PrestationsController::class, 'updatePrestations']);
         Route::delete('/{id}', [PrestationsController::class, 'deletePrestation']);
+    });
+
+    Route::prefix('accomptes')->group(function () {
+        Route::post('/', [AccomptesController::class, 'createAccompte']);
+        Route::put('/{id}', [AccomptesController::class, 'updateAccompte']);
+        Route::put('paid/{id}', [AccomptesController::class, 'PaidAccompte']);
+    });
+
+    Route::prefix('reservations')->group(function () {
+        Route::get('/', [ReservationsController::class, 'getAllReservations']);
+        Route::post('/', [ReservationsController::class, 'createReservation']);
+        Route::get('/{id_reservation}', [ReservationsController::class, 'getOneReservation']);
+        Route::delete('/{id_reservation}', [ReservationsController::class, 'AnnulerOneReservation']);
+        Route::put('/{id_reservation}', [ReservationsController::class, 'ConfirmOneReservation']);
+    });
+
+
+    Route::prefix('hotel')->group(function () {
+        Route::get('/', [HotelController::class, 'getHotelInfo']);
+    });
+
+    Route::prefix('facture')->group(function () {
+        Route::get('/', [HotelController::class, 'getHotelSettingFacture']);
+        Route::put('/{id}', [HotelController::class, 'updateHotelSettingFactures']);
+    });
+
+    Route::prefix('generatefacture')->group(function () {
+        Route::get('/', [FacturesController::class, 'getLastFactureNumber']);
+        Route::post('/', [FacturesController::class, 'Printfacture']);
+        Route::post('/{id}', [FacturesController::class, 'SaveFacture']);
     });
 });

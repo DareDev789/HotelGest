@@ -17,6 +17,8 @@ class SocieteAccomptesReservations extends Model
         'id_hotel',
         'montant',
         'save_by',
+        'paid',
+        'facture_id',
     ];
 
     public function hotel()
@@ -31,4 +33,9 @@ class SocieteAccomptesReservations extends Model
     {
         return $this->belongsTo(SocieteUser::class, 'save_by', 'id');
     }
+    public function facture()
+    {
+        return $this->hasOne(SocieteFactures::class, 'id_accompte', 'id');
+    }
+
 }

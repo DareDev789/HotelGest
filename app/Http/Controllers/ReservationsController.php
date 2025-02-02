@@ -102,7 +102,7 @@ class ReservationsController extends Controller
             $detailPrestation = SocieteDetailsPrestations::where('id_reservation', $id_reservation)
                 ->get();
 
-            $accomptes = SocieteAccomptesReservations::with(['user'])
+            $accomptes = SocieteAccomptesReservations::with(['user', 'facture'])
                 ->where('id_reservation', $id_reservation)
                 ->get();
 
