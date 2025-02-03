@@ -5,8 +5,12 @@ use App\Http\Controllers\AgencesController;
 use App\Http\Controllers\ClientsController;
 use App\Http\Controllers\FacturesController;
 use App\Http\Controllers\HotelController;
+use App\Http\Controllers\MigrationMenuBarController;
 use App\Http\Controllers\PrestationsController;
+use App\Http\Controllers\ProduitController;
 use App\Http\Controllers\ServicesDivers;
+use App\Http\Controllers\SocieteCategorieMenuController;
+use App\Http\Controllers\SocieteMenuController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
@@ -34,6 +38,12 @@ Route::post('allMigrationsReservations', [AllMigrationsController::class, 'allMi
 Route::post('allMigrationsDetailsPrestaions', [AllMigrationsController::class, 'allMigrationsDetailsPrestaions']);
 Route::post('allMigrationsReservationsDivers', [AllMigrationsController::class, 'allMigrationsReservationsDivers']);
 Route::post('allMigrationsAccomptes', [AllMigrationsController::class, 'allMigrationsAccomptes']);
+
+
+Route::post('allMigrationsCategorieMenu', [MigrationMenuBarController::class, 'allMigrationsCategorieMenu']);
+Route::post('allMigrationsMenu', [MigrationMenuBarController::class, 'allMigrationsMenu']);
+Route::post('allMigrationsCategorieProduit', [MigrationMenuBarController::class, 'allMigrationsCategorieProduit']);
+Route::post('allMigrationsProduits', [MigrationMenuBarController::class, 'allMigrationsProduits']);
 
 Route::get('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 Route::post('register', [AuthController::class, 'register']);
@@ -108,5 +118,24 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [FacturesController::class, 'getLastFactureNumber']);
         Route::post('/', [FacturesController::class, 'Printfacture']);
         Route::post('/{id}', [FacturesController::class, 'SaveFacture']);
+    });
+
+    Route::prefix('menus')->group(function () {
+        Route::get('/', [SocieteMenuController::class, 'getAllMenu']);
+        Route::post('/', [SocieteMenuController::class, 'CreateMenu']);
+        Route::put('/{id}', [SocieteMenuController::class, 'updateMenu']);
+        Route::delete('/{id}', [SocieteMenuController::class, 'destroy']);
+    });
+
+
+    Route::prefix('categories-menus')->group(function () {
+        Route::get('/', [SocieteCategorieMenuController::class, 'getAllCategorieMenu']);
+        Route::post('/', [SocieteCategorieMenuController::class, 'CreateCategorieMenu']);
+        Route::put('/{id}', [SocieteCategorieMenuController::class, 'updateCategorieMenu']);
+        Route::delete('/{id}', [SocieteCategorieMenuController::class, 'destroy']);
+    });
+
+    Route::prefix('categories-produits')->group(function () {
+        Route::get('/', [ProduitController::class, 'getCategoriesProduitsAvecStock']);
     });
 });
