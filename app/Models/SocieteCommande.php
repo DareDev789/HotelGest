@@ -9,14 +9,20 @@ class SocieteCommande extends Model
 {
     use SoftDeletes;
 
+    protected $table = 'societe_commande';
+
     protected $primaryKey = 'id_commande';
     public $incrementing = false;
     protected $keyType = 'string';
 
     protected $fillable = [
         'id_client',
-        'nom_client',
+        'id_agence',
         'id_hotel',
+        'type_client',
+        'statut_reservation',
+        'devise',
+        'etat_reservation',
     ];
 
     public function hotel()

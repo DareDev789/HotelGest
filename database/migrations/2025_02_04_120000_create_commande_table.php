@@ -13,10 +13,11 @@ return new class extends Migration {
         Schema::create('societe_commande', function (Blueprint $table) {
             $table->uuid('id_commande')->primary();
             $table->unsignedBigInteger('id_client')->nullable();
-            $table->string('nom_client')->nullable();
             $table->uuid('id_hotel')->nullable();
             $table->unsignedBigInteger('id_agence')->nullable();
-            $table->string('nom_agence')->nullable();
+            $table->string('devise')->nullable();
+            $table->string('type_client')->nullable();
+            $table->string('statut_reservation')->nullable();
             $table->softDeletes();
             $table->timestamps();
 

@@ -20,7 +20,6 @@ class SocieteDetailsCommandesMenus extends Model
         'prix_menu',
         'nom_menu',
         'id_hotel',
-        'save_by',
     ];
 
     public function hotel()
@@ -36,9 +35,5 @@ class SocieteDetailsCommandesMenus extends Model
     public function commande()
     {
         return $this->belongsTo(SocieteCommande::class, 'id_commande', 'id_commande');
-    }
-    public function user()
-    {
-        return $this->belongsTo(SocieteUser::class, 'save_by', 'id');
     }
 }

@@ -44,6 +44,9 @@ Route::post('allMigrationsCategorieMenu', [MigrationMenuBarController::class, 'a
 Route::post('allMigrationsMenu', [MigrationMenuBarController::class, 'allMigrationsMenu']);
 Route::post('allMigrationsCategorieProduit', [MigrationMenuBarController::class, 'allMigrationsCategorieProduit']);
 Route::post('allMigrationsProduits', [MigrationMenuBarController::class, 'allMigrationsProduits']);
+Route::post('allMigrationsCommandes', [MigrationMenuBarController::class, 'allMigrationsCommandes']);
+Route::post('allMigrationsDetailsProduit', [MigrationMenuBarController::class, 'allMigrationsDetailsProduit']);
+Route::post('allMigrationsDetailsMenu', [MigrationMenuBarController::class, 'allMigrationsDetailsMenu']);
 
 Route::get('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 Route::post('register', [AuthController::class, 'register']);

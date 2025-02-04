@@ -4,8 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Models\Categorie_Menu;
 use App\Models\Categorie_Produit;
+use App\Models\CommandesMenus;
+use App\Models\CommandesProduits;
+use App\Models\Reservations;
+use App\Models\SocieteAgence;
 use App\Models\SocieteCategorieMenu;
 use App\Models\SocieteCategorieProduit;
+use App\Models\SocieteClient;
+use App\Models\SocieteCommande;
+use App\Models\SocieteDetailsCommandesMenus;
+use App\Models\SocieteDetailsCommandesProduits;
+use App\Models\SocieteDevise;
 use App\Models\SocieteHotel;
 use App\Models\SocieteMenu;
 use App\Models\Menu;
@@ -158,8 +167,9 @@ class MigrationMenuBarController extends Controller
 
             // Étape 1 : Grouper les produits et insérer dans societe_produit
             $groupedProduits = Produit::selectRaw('MIN(ID) as id, nom_produit, prix_vente, categorie_id, MAX(quantifie) as quantifie, MAX(id_hotel) as id_hotel')
-                ->groupBy('nom_produit', 'prix_vente')
+                ->groupBy('nom_produit', 'prix_vente', 'categorie_id')
                 ->get();
+
 
             $produitMap = []; // Associer les produits aux nouveaux IDs
 
@@ -223,6 +233,152 @@ class MigrationMenuBarController extends Controller
             Log::error("Erreur lors de la migration des produits : " . $e->getMessage());
 
             return response()->json(['error' => 'Erreur lors de la migration des produits.', 'details' => $e->getMessage()], 500);
+        }
+    }
+
+    public function allMigrationsCommandes(Request $request)
+    {
+        try {
+            $commandes = Reservations::select(
+                'ident_reservation',
+                DB::raw('MAX(id_reservation) as id_reservation'),
+                DB::raw('MAX(id_client) as id_client'),
+                DB::raw('MAX(id_agence) as id_agence'),
+                DB::raw('MAX(id_hotel) as id_hotel'),
+                DB::raw('MAX(type_client) as type_client'),
+                DB::raw('MAX(devise) as devise'),
+                DB::raw('MAX(facture) as facture'),
+                DB::raw('MAX(date_reservation) as date_reservation'),
+                DB::raw('MAX(etat_reservation) as etat_reservation')
+            )
+                ->where('etat_reservation', '!=', 'Annule')
+                ->where('type_reser', 2)
+                ->groupBy('ident_reservation')
+                ->get();
+
+            foreach ($commandes as $commande) {
+
+                $devise = SocieteDevise::where('id_hotel', $commande->id_hotel)
+                    ->where('type', 'autres')->first();
+
+                $existingCommande = SocieteCommande::where('id_commande', $commande->ident_reservation)->first();
+
+                if (!$existingCommande) {
+                    $SocieteCommande = new SocieteCommande();
+                    $ident_reservation = $commande->ident_reservation;
+
+                    $id_agence = null;
+
+                    if (!$devise) {
+                        Log::warning('Devise introuvable', ['id_hotel' => $commande->id_hotel]);
+                        continue;
+                    }
+
+                    $id_client = empty($commande->id_client) ? null : $commande->id_client;
+
+                    $SocieteCommande->id_commande = $commande->ident_reservation;
+                    $SocieteCommande->id_client = $id_client;
+                    $SocieteCommande->id_agence = $id_agence;
+                    $SocieteCommande->id_hotel = $commande->id_hotel;
+                    $SocieteCommande->type_client = $commande->type_client;
+                    $SocieteCommande->statut_reservation = $commande->facture;
+                    $SocieteCommande->devise = $devise->devise;
+
+                    $SocieteCommande->save();
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'commandes' => $commandes,
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de la migration des commandes', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'message' => 'Une erreur est survenue pendant la migration des commandes.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+    public function allMigrationsDetailsMenu(Request $request)
+    {
+        try {
+            $detailsMenus = CommandesMenus::all();
+
+            foreach ($detailsMenus as $detailsMenu) {
+                // Vérification des clés étrangères
+                if ($detailsMenu->ident_reservation && !SocieteCommande::where('id_commande', $detailsMenu->ident_reservation)->first()) {
+                    Log::warning('Commande introuvable ou id_reservation vide', ['id_commande' => $detailsMenu->ident_reservation]);
+                    continue;
+                }
+
+                $nomMenu = SocieteMenu::where('nom_menu', $detailsMenu->nom_menu)->where('id_hotel', $detailsMenu->id_hotel)->first();
+
+                $SocieteDetailsCommandesMenus = new SocieteDetailsCommandesMenus();
+                $SocieteDetailsCommandesMenus->id_commande = $detailsMenu->ident_reservation;
+                $SocieteDetailsCommandesMenus->quantite = $detailsMenu->quantite;
+                $SocieteDetailsCommandesMenus->id_menu = $nomMenu->id;
+                $SocieteDetailsCommandesMenus->prix_menu = $detailsMenu->prix_menu;
+                $SocieteDetailsCommandesMenus->nom_menu = $detailsMenu->nom_menu;
+                $SocieteDetailsCommandesMenus->id_hotel = $detailsMenu->id_hotel;
+
+                $SocieteDetailsCommandesMenus->save();
+            }
+
+            return response()->json([
+                'message' => 'Migration des details de menu effectuée avec succès.',
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de la migration des details de menu', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'message' => 'Une erreur est survenue pendant la migration des details de menu.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function allMigrationsDetailsProduit(Request $request)
+    {
+        try {
+            $detailsProduits = CommandesProduits::all();
+
+            foreach ($detailsProduits as $detailsProduit) {
+                // Vérification des clés étrangères
+                if ($detailsProduit->ident_reservation && !SocieteCommande::where('id_commande', $detailsProduit->ident_reservation)->first()) {
+                    Log::warning('Commande introuvable ou id_reservation vide', ['id_commande' => $detailsProduit->ident_reservation]);
+                    continue;
+                }
+
+                $nomMenu = SocieteProduit::where('nom_produit', $detailsProduit->nom_produit)->where('id_hotel', $detailsProduit->id_hotel)->first();
+
+                $SocieteDetailsCommandesProduits = new SocieteDetailsCommandesProduits();
+                $SocieteDetailsCommandesProduits->id_commande = $detailsProduit->ident_reservation;
+                $SocieteDetailsCommandesProduits->quantite = $detailsProduit->quantite;
+                $SocieteDetailsCommandesProduits->id_produit = $nomMenu->id;
+                $SocieteDetailsCommandesProduits->prix_produit = $detailsProduit->prix_unitaire;
+                $SocieteDetailsCommandesProduits->nom_produit = $detailsProduit->nom_produit;
+                $SocieteDetailsCommandesProduits->id_hotel = $detailsProduit->id_hotel;
+
+                $SocieteDetailsCommandesProduits->save();
+            }
+
+            return response()->json([
+                'message' => 'Migration des details de produit effectuée avec succès.',
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de la migration des details de produit', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'message' => 'Une erreur est survenue pendant la migration des details de produit.',
+                'error' => $e->getMessage(),
+            ], 500);
         }
     }
 

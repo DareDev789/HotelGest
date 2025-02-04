@@ -18,7 +18,6 @@ return new class extends Migration {
             $table->float('prix_menu')->nullable();
             $table->string('nom_menu')->nullable();
             $table->uuid('id_hotel')->nullable();
-            $table->unsignedBigInteger('save_by')->nullable()->index();
             $table->softDeletes();
             $table->timestamps();
 
