@@ -49,7 +49,7 @@ class AccomptesController extends Controller
                 'success' => true,
                 'message' => 'Accompte enregistré avec succès !',
                 'accompte' => $accompte, // Retourner l'acompte créé
-            ], 200);
+            ], 200, ['Content-Type' => 'application/json; charset=UTF-8']);
         } catch (\Exception $e) {
             Log::error('Erreur lors de l\'enregistrement de l\'acompte', [
                 'error' => $e->getMessage(),
@@ -103,7 +103,7 @@ class AccomptesController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Accompte modifié avec succès !',
-            ], 200);
+            ], 200, ['Content-Type' => 'application/json; charset=UTF-8']);
         } catch (\Exception $e) {
             Log::error('Erreur lors de la mise à jour de l\'acompte', [
                 'error' => $e->getMessage(),
@@ -166,7 +166,7 @@ class AccomptesController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Accompte marquée comme payé avec succès !',
-            ], 200);
+            ], 200, ['Content-Type' => 'application/json; charset=UTF-8']);
         } catch (\Exception $e) {
             Log::error('Erreur lors de la mise à jour de l\'acompte', [
                 'error' => $e->getMessage(),

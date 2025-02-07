@@ -30,7 +30,7 @@ class PrestationsController extends Controller
             return response()->json([
                 'success' => true,
                 'prestations' => $prestations,
-            ], 200);
+            ], 200, ['Content-Type' => 'application/json; charset=UTF-8']);
         } catch (\Exception $e) {
             Log::error('Erreur lors de la récupération des prestations', [
                 'error' => $e->getMessage(),
@@ -67,7 +67,7 @@ class PrestationsController extends Controller
                 ]);
 
 
-                return response()->json(['message' => "Prestation mis à jour avec succès !"], 200);
+                return response()->json(['message' => "Prestation mis à jour avec succès !"], 200, ['Content-Type' => 'application/json; charset=UTF-8']);
             }
 
             return response()->json(['message' => 'Aucun hôtel associé à cet utilisateur.'], 401);
@@ -102,7 +102,7 @@ class PrestationsController extends Controller
                 ]);
 
 
-                return response()->json(['message' => "Prestation ajouté avec succès !"], 200);
+                return response()->json(['message' => "Prestation ajouté avec succès !"], 200, ['Content-Type' => 'application/json; charset=UTF-8']);
             }
 
             return response()->json(['message' => 'Aucun hôtel associé à cet utilisateur.'], 401);
@@ -126,7 +126,7 @@ class PrestationsController extends Controller
 
                 $prestation->delete();
 
-                return response()->json(['message' => "Prestation supprimée avec succès !"], 200);
+                return response()->json(['message' => "Prestation supprimée avec succès !"], 200, ['Content-Type' => 'application/json; charset=UTF-8']);
             }
 
             return response()->json(['message' => 'Aucun hôtel associé à cet utilisateur.'], 401);

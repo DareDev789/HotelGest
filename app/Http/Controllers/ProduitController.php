@@ -21,13 +21,13 @@ class ProduitController extends Controller
                     'message' => 'Utilisateur non authentifié ou non associé à un hôtel.',
                 ], 401);
             }
-            $categories = SocieteCategorieProduit::with([
+            $categories = SocieteCategorieProduit::with([ 
                 'Produits' => function ($query) {
-                    $query->with('Stock');
+                    $query->with('Stock', 'commandes');
                 }
             ])->where('id_hotel', $user->id_hotel)->get();
 
-            return response()->json($categories);
+            return response()->json($categories, 200, ['Content-Type' => 'application/json; charset=UTF-8']);
 
 
         } catch (\Exception $e) {

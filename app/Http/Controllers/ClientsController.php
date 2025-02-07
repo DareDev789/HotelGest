@@ -30,7 +30,7 @@ class ClientsController extends Controller
             return response()->json([
                 'success' => true,
                 'clients' => $clients,
-            ], 200);
+            ], 200, ['Content-Type' => 'application/json; charset=UTF-8']);
         } catch (\Exception $e) {
             Log::error('Erreur lors de la récupération des clients', [
                 'error' => $e->getMessage(),
@@ -71,7 +71,7 @@ class ClientsController extends Controller
                 ]);
 
 
-                return response()->json(['message' => "client mis à jour avec succès !"], 200);
+                return response()->json(['message' => "client mis à jour avec succès !"], 200, ['Content-Type' => 'application/json; charset=UTF-8']);
             }
 
             return response()->json(['message' => 'Aucun hôtel associé à cet utilisateur.'], 401);
@@ -110,7 +110,7 @@ class ClientsController extends Controller
                 ]);
 
 
-                return response()->json(['message' => "client ajouté avec succès !"], 200);
+                return response()->json(['message' => "client ajouté avec succès !"], 200, ['Content-Type' => 'application/json; charset=UTF-8']);
             }
 
             return response()->json(['message' => 'Aucun hôtel associé à cet utilisateur.'], 401);
@@ -134,7 +134,7 @@ class ClientsController extends Controller
 
                 $client->delete();
 
-                return response()->json(['message' => "Client supprimé avec succès !"], 200);
+                return response()->json(['message' => "Client supprimé avec succès !"], 200, ['Content-Type' => 'application/json; charset=UTF-8']);
             }
 
             return response()->json(['message' => 'Aucun hôtel associé à cet utilisateur.'], 401);

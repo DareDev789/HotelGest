@@ -30,7 +30,7 @@ class SocieteProduitStock extends Model
     {
         return $this->belongsTo(SocieteCategorieProduit::class, 'id_produit', 'id');
     }
-    public function User() 
+    public function User()
     {
         return $this->belongsTo(SocieteUser::class, 'id_user', 'id');
     }

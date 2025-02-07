@@ -2,17 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\SocieteCategorieMenu;
+use App\Models\SocieteProduit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
-// Controller pour SocieteCategorieMenu
-class SocieteCategorieMenuController extends Controller
+class SocieteProduitsController extends Controller
 {
-    // Liste des catégories de menu
-    public function getAllCategorieMenu()
+    // Liste des menus
+    public function getAllProduits()
     {
+        header('Content-Type: application/json; charset=utf-8');
         try {
             $user = Auth::user();
 
@@ -23,7 +23,7 @@ class SocieteCategorieMenuController extends Controller
                     'message' => 'Utilisateur non authentifié ou non associé à un hôtel.',
                 ], 401);
             }
-            return response()->json(SocieteCategorieMenu::with('Menu')->where('id_hotel', $user->id_hotel)->get(), 200, ['Content-Type' => 'application/json; charset=UTF-8']);
+            return response()->json(SocieteProduit::with('categorie')->where('id_hotel', $user->id_hotel)->get(), 200, ['Content-Type' => 'application/json; charset=UTF-8']);
 
         } catch (\Exception $e) {
             Log::error('Erreur lors de la récuperation des données', [
@@ -36,10 +36,11 @@ class SocieteCategorieMenuController extends Controller
                 'error' => $e->getMessage(),
             ], 500);
         }
+
     }
 
-    // Création d'une catégorie de menu
-    public function CreateCategorieMenu(Request $request)
+    // Création d'un menu
+    public function CreateProduit(Request $request)
     {
         try {
             $user = Auth::user();
@@ -53,13 +54,17 @@ class SocieteCategorieMenuController extends Controller
             }
 
             $validated = $request->validate([
-                'nom_categorie_menu' => 'required|string|max:255',
+                'id_categorie' => 'required|exists:societe_categorie_menu,id',
+                'nom_produit' => 'required|string|max:255',
+                'prix_vente' => 'required|numeric',
+                'quantifie' => 'nullable|string',
+                // Corrected here: Dynamically assign user’s hotel ID
                 'id_hotel' => 'required|integer|in:' . $user->id_hotel,
             ]);
 
-            $categorie = SocieteCategorieMenu::create($validated);
-            return response()->json($categorie, 201);
+            $produit = SocieteProduit::create($validated);
 
+            return response()->json($produit, 201);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -68,8 +73,8 @@ class SocieteCategorieMenuController extends Controller
         }
     }
 
-    // Mise à jour d'une catégorie de menu
-    public function updateCategorieMenu(Request $request, $id)
+
+    public function updateProduit(Request $request, $id)
     {
         try {
             $user = Auth::user();
@@ -81,28 +86,22 @@ class SocieteCategorieMenuController extends Controller
                     'message' => 'Utilisateur non authentifié ou non associé à un hôtel.',
                 ], 401);
             }
-            $categorie = SocieteCategorieMenu::findOrFail($id);
+            $produit = SocieteProduit::findOrFail($id);
 
-            if (!$categorie || $categorie->id_hotel !== $user->id_hotel) {
+            if (!$produit || $produit->id_hotel !== $user->id_hotel) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'categorie introuvable ou accès refusé.',
+                    'message' => 'produit introuvable ou accès refusé.',
                 ], 404);
             }
 
             $validated = $request->validate([
-                'id_categorie' => 'sometimes|exists:societe_categorie_menu,id',
-                'nom_menu' => 'sometimes|string|max:255',
-                'prix_menu' => 'sometimes|numeric',
-                'autres_info_menu' => 'sometimes|string',
+                'id_categorie' => 'sometimes|exists:societe_categorie_produit,id',
+                'nom_produit' => 'sometimes|string|max:255',
+                'prix_vente' => 'sometimes|numeric',
             ]);
-
-            $validated = $request->validate([
-                'nom_categorie_menu' => 'sometimes|string|max:255',
-            ]);
-
-            $categorie->update($validated);
-            return response()->json($categorie, 200, ['Content-Type' => 'application/json; charset=UTF-8']);
+            $produit->update($validated);
+            return response()->json($produit, 200, ['Content-Type' => 'application/json; charset=UTF-8']);
 
         } catch (\Exception $e) {
             return response()->json([
@@ -110,9 +109,10 @@ class SocieteCategorieMenuController extends Controller
                 'message' => 'Une erreur est survenue: ' . $e->getMessage(),
             ], 500);
         }
+
     }
 
-    // Suppression d'une catégorie de menu (Soft Delete)
+    // Suppression d'un menu (Soft Delete)
     public function destroy($id)
     {
         try {
@@ -125,18 +125,17 @@ class SocieteCategorieMenuController extends Controller
                     'message' => 'Utilisateur non authentifié ou non associé à un hôtel.',
                 ], 401);
             }
-            $categorie = SocieteCategorieMenu::findOrFail($id);
+            $produit = SocieteProduit::findOrFail($id);
 
-            if (!$categorie || $categorie->id_hotel !== $user->id_hotel) {
+            if (!$produit || $produit->id_hotel !== $user->id_hotel) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'menu introuvable ou accès refusé.',
+                    'message' => 'produit introuvable ou accès refusé.',
                 ], 404);
             }
 
-            $categorie->delete();
-            return response()->json(['message' => 'Catégorie supprimée avec succès'], 200, ['Content-Type' => 'application/json; charset=UTF-8']);
-
+            $produit->delete();
+            return response()->json(['message' => 'produit supprimé avec succès'], 200, ['Content-Type' => 'application/json; charset=UTF-8']);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -145,3 +144,4 @@ class SocieteCategorieMenuController extends Controller
         }
     }
 }
+

@@ -62,7 +62,7 @@ class ReservationsController extends Controller
             return response()->json([
                 'success' => true,
                 'reservations' => $reservations,
-            ], 200);
+            ], 200, ['Content-Type' => 'application/json; charset=UTF-8']);
         } catch (\Exception $e) {
             Log::error('Erreur lors de la récupération des réservations mensuelles', [
                 'error' => $e->getMessage(),
@@ -112,7 +112,7 @@ class ReservationsController extends Controller
                 'detailReservation' => $detailReservation,
                 'detailPrestation' => $detailPrestation,
                 'accomptes' => $accomptes,
-            ], 200);
+            ], 200, ['Content-Type' => 'application/json; charset=UTF-8']);
         } catch (\Exception $e) {
             Log::error('Erreur lors de la récupération de la réservation', [
                 'error' => $e->getMessage(),
@@ -165,7 +165,7 @@ class ReservationsController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Réservation confirmée avec succès !',
-            ], 200);
+            ], 200, ['Content-Type' => 'application/json; charset=UTF-8']);
         } catch (\Exception $e) {
             Log::error('Erreur lors de la récupération de la réservation', [
                 'error' => $e->getMessage(),
@@ -205,7 +205,7 @@ class ReservationsController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Réservation annulé avec succès !',
-            ], 200);
+            ], 200, ['Content-Type' => 'application/json; charset=UTF-8']);
         } catch (\Exception $e) {
             Log::error('Erreur lors de l\'annulation de la réservation de la réservation', [
                 'error' => $e->getMessage(),
@@ -361,4 +361,452 @@ class ReservationsController extends Controller
         }
     }
 
+    public function UpdateDetailReservation(Request $request, $id)
+    {
+        try {
+            $user = Auth::user();
+            if (!$user || !$user->id_hotel) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Utilisateur non authentifié ou non associé à un hôtel.',
+                ], 401);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'type_bungalow' => 'required|string|max:250',
+                'prix_bungalow' => 'required|numeric',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Données invalides',
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+
+            $SocieteDetailsReservation = SocieteDetailsReservation::findOrFail($id);
+
+            $SocieteDetailsReservation->update([
+                'type_bungalow' => $request->type_bungalow,
+                'prix_bungalow' => $request->prix_bungalow,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Réservation modifiée avec succès.',
+                'reservation' => $SocieteDetailsReservation,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la mise à jour de la réservation.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+    public function DeleteDetailReservation(Request $request, $id)
+    {
+        try {
+            $user = Auth::user();
+            if (!$user || !$user->id_hotel) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Utilisateur non authentifié ou non associé à un hôtel.',
+                ], 401);
+            }
+
+            $SocieteDetailsReservation = SocieteDetailsReservation::findOrFail($id);
+            $id_reservation = $SocieteDetailsReservation->id_reservation;
+
+            // Récupérer tous les détails liés à la réservation
+            $fetchDetails = SocieteDetailsReservation::where('id_reservation', $id_reservation)->get();
+
+            // Vérifier s'il ne reste qu'un seul détail (empêche la suppression si c'est le dernier)
+            if (count($fetchDetails) == 1) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Impossible de supprimer le dernier détail de réservation.',
+                ], 400);
+            }
+
+            // Supprimer le détail de réservation
+            $SocieteDetailsReservation->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Détail de réservation effacé avec succès.',
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la suppression du détail de réservation.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+    public function AddDetailReservation(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            if (!$user || !$user->id_hotel) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Utilisateur non authentifié ou non associé à un hôtel.',
+                ], 401);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'selectedBungalow.*.id' => 'required|integer|exists:societe_bungalows,id',
+                'id_reservation' => 'required|string|exists:societe_reservations,id_reservation',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Données invalides',
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+
+            $SocieteReservation = SocieteReservation::where('id_reservation', $request->id_reservation)
+                ->where('id_hotel', $user->id_hotel)
+                ->first();
+
+            if (!$SocieteReservation) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Réservation introuvable.',
+                ], 404);
+            }
+
+            $timezone = $request->timezone ?? 'UTC';
+
+            $firstDetail = $SocieteReservation->detailsReservations()->orderBy('date_debut')->first();
+
+            if (!$firstDetail) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Aucun détail de réservation trouvé pour cette réservation.',
+                ], 404);
+            }
+
+            $startDate = Carbon::parse($firstDetail->date_debut)->setTimezone($timezone);
+            $endDate = Carbon::parse($firstDetail->date_fin)->setTimezone($timezone);
+
+            $bungalowIds = collect($request->selectedBungalow)->pluck('id');
+
+            // Vérifier en une seule requête les bungalows déjà réservés
+            $unavailableBungalows = SocieteDetailsReservation::whereIn('id_bungalow', $bungalowIds)
+                ->where('id_hotel', $user->id_hotel)
+                ->where(function ($query) use ($startDate, $endDate) {
+                    $query->where('date_debut', '<', $endDate)
+                        ->where('date_fin', '>', $startDate);
+                })
+                ->pluck('id_bungalow')
+                ->toArray();
+
+            if (!empty($unavailableBungalows)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Certains bungalows sont déjà réservés pour les dates sélectionnées.',
+                    'unavailableBungalows' => $unavailableBungalows,
+                ], 409);
+            }
+
+            // Ajouter les détails de réservation
+            $details = [];
+            foreach ($request->selectedBungalow as $bungalow) {
+                $details[] = [
+                    'id_reservation' => $request->id_reservation,
+                    'id_bungalow' => $bungalow['id'],
+                    'type_bungalow' => $bungalow['type'],
+                    'prix_bungalow' => $bungalow['price'],
+                    'id_hotel' => $user->id_hotel,
+                    'date_debut' => $startDate,
+                    'date_fin' => $endDate,
+                ];
+            }
+
+            // Insérer les nouvelles réservations en une seule requête
+            SocieteDetailsReservation::insert($details);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Détail de réservation ajouté avec succès.',
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de l\'ajout de la réservation.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function UpdateReservation(Request $request, $id)
+    {
+        try {
+            $user = Auth::user();
+            if (!$user || !$user->id_hotel) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Utilisateur non authentifié ou non associé à un hôtel.',
+                ], 401);
+            }
+
+            // Validation des données
+            $validator = Validator::make($request->all(), [
+                'notes' => 'nullable|string|max:250',
+                'startDate' => 'nullable|date',
+                'endDate' => 'nullable|date|after_or_equal:startDate',
+                'nbPax' => 'nullable|integer|min:1',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Données invalides',
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+
+            $timezone = $request->timezone ?? 'UTC';
+
+            // Récupérer la réservation principale
+            $SocieteReservation = SocieteReservation::findOrFail($id);
+
+            // Mise à jour de la note dans SocieteReservation
+            if ($request->has('notes')) {
+                $SocieteReservation->update(['notes' => $request->notes]);
+            }
+
+            // Récupérer les détails de la réservation
+            $detailReservations = SocieteDetailsReservation::where('id_reservation', $id)->get();
+
+            if ($detailReservations->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Aucun détail de réservation trouvé.',
+                ], 404);
+            }
+
+            // Vérifier si des modifications doivent être faites
+            $updateDetails = false;
+            $date_debut = $request->filled('startDate') ? Carbon::parse($request->startDate)->setTimezone($timezone) : null;
+            $date_fin = $request->filled('endDate') ? Carbon::parse($request->endDate)->setTimezone($timezone) : null;
+            $nbPax = $request->has('nbPax') ? $request->nbPax : null;
+
+            if ($date_debut || $date_fin || !is_null($nbPax)) {
+                $updateDetails = true;
+            }
+
+            // Mise à jour des détails de la réservation
+            if ($updateDetails) {
+
+                $idHotel = $user->id_hotel;
+
+                // Vérifier la disponibilité des bungalows sélectionnés
+                $unavailableBungalows = [];
+                foreach ($request->selectedBungalow as $bungalow) {
+                    $isReserved = SocieteReservation::where('id_hotel', $idHotel)
+                        ->where('id_reservation', '!=', $id)
+                        ->whereHas('detailsReservations', function ($query) use ($date_debut, $date_fin, $bungalow) {
+                            $query->where('id_bungalow', $bungalow['id'])
+                                ->where('date_debut', '<', $date_debut)
+                                ->where('date_fin', '>', $date_fin);
+                        })->exists();
+
+                    if ($isReserved) {
+                        $unavailableBungalows[] = $bungalow;
+                    }
+                }
+
+                if (!empty($unavailableBungalows)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Certains bungalows sont déjà réservés pour les dates sélectionnées.',
+                        'unavailableBungalows' => $unavailableBungalows,
+                    ], 409);
+                }
+
+                foreach ($detailReservations as $detailReservation) {
+                    if (!is_null($date_debut)) {
+                        $detailReservation->date_debut = $date_debut;
+                    }
+                    if (!is_null($date_fin)) {
+                        $detailReservation->date_fin = $date_fin;
+                    }
+                    if (!is_null($nbPax)) {
+                        $detailReservation->nb_personne = $nbPax;
+                    }
+                    $detailReservation->save();
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Réservation modifiée avec succès.',
+                'reservation' => $SocieteReservation,
+                'details' => $detailReservations,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la mise à jour de la réservation.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+    public function UpdateDetailDivers(Request $request, $id)
+    {
+        try {
+            $user = Auth::user();
+            if (!$user || !$user->id_hotel) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Utilisateur non authentifié ou non associé à un hôtel.',
+                ], 401);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'designation' => 'required|string|max:250',
+                'prix_jour' => 'required|numeric',
+                'pack' => 'required|numeric',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Données invalides',
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+
+            $SocieteDetailsDiver = SocieteDetailsReservationsDivers::findOrFail($id);
+
+            $SocieteDetailsDiver->update([
+                'designation' => $request->designation,
+                'prix_jour' => $request->prix_jour,
+                'pack' => $request->pack,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Service divers modifiée avec succès.',
+                'SocieteDetailsDiver' => $SocieteDetailsDiver,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la mise à jour du service Divers.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+    public function DeleteDetailDivers(Request $request, $id)
+    {
+        try {
+            $user = Auth::user();
+            if (!$user || !$user->id_hotel) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Utilisateur non authentifié ou non associé à un hôtel.',
+                ], 401);
+            }
+
+            $SocieteDetailsDiver = SocieteDetailsReservationsDivers::findOrFail($id);
+
+            $SocieteDetailsDiver->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Detail de service Divers effacé avec succès.',
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la mise à jour de la réservation.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function AddDetailDivers(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            if (!$user || !$user->id_hotel) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Utilisateur non authentifié ou non associé à un hôtel.',
+                ], 401);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'selectedDivers.*.id' => 'required|integer|exists:societe_services_divers,id',
+                'id_reservation' => 'required|string|exists:societe_reservations,id_reservation',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Données invalides',
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+
+            $SocieteReservation = SocieteReservation::where('id_reservation', $request->id_reservation)
+                ->where('id_hotel', $user->id_hotel)
+                ->first();
+
+            if (!$SocieteReservation) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Réservation introuvable.',
+                ], 404);
+            }
+
+            // Ajouter les détails de réservation
+            $details = [];
+            foreach ($request->selectedDivers as $diver) {
+                $details[] = [
+                    'id_reservation' => $SocieteReservation->id_reservation,
+                    'id_hotel' => $user->id_hotel,
+                    'prix_jour' => $diver['diver']['prixPax'],
+                    'pack' => $diver['pack'],
+                    'id_diver' => $diver['diver']['id'],
+                    'designation' => $diver['diver']['designation'],
+                ];
+            }
+
+            SocieteDetailsReservationsDivers::insert($details);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Détail de service divers ajouté avec succès.',
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de l\'ajout de la réservation.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }

@@ -13,6 +13,7 @@ class SocieteMenuController extends Controller
     // Liste des menus
     public function getAllMenu()
     {
+        header('Content-Type: application/json; charset=utf-8');
         try {
             $user = Auth::user();
 
@@ -23,7 +24,7 @@ class SocieteMenuController extends Controller
                     'message' => 'Utilisateur non authentifié ou non associé à un hôtel.',
                 ], 401);
             }
-            return response()->json(SocieteMenu::with('categorie')->where('id_hotel', $user->id_hotel)->get(), 200);
+            return response()->json(SocieteMenu::with('categorie')->where('id_hotel', $user->id_hotel)->get(), 200, ['Content-Type' => 'application/json; charset=UTF-8']);
 
         } catch (\Exception $e) {
             Log::error('Erreur lors de la récuperation des données', [
@@ -103,7 +104,7 @@ class SocieteMenuController extends Controller
                 'autres_info_menu' => 'sometimes|string',
             ]);
             $menu->update($validated);
-            return response()->json($menu, 200);
+            return response()->json($menu, 200, ['Content-Type' => 'application/json; charset=UTF-8']);
 
         } catch (\Exception $e) {
             return response()->json([
@@ -137,7 +138,7 @@ class SocieteMenuController extends Controller
             }
 
             $menu->delete();
-            return response()->json(['message' => 'Menu supprimé avec succès'], 200);
+            return response()->json(['message' => 'Menu supprimé avec succès'], 200, ['Content-Type' => 'application/json; charset=UTF-8']);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

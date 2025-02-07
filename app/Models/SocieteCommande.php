@@ -12,7 +12,9 @@ class SocieteCommande extends Model
     protected $table = 'societe_commande';
 
     protected $primaryKey = 'id_commande';
+
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     protected $fillable = [
@@ -22,7 +24,6 @@ class SocieteCommande extends Model
         'type_client',
         'statut_reservation',
         'devise',
-        'etat_reservation',
     ];
 
     public function hotel()

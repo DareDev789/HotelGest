@@ -31,7 +31,7 @@ class ServicesDivers extends Controller
             return response()->json([
                 'success' => true,
                 'divers' => $divers,
-            ], 200);
+            ], 200, ['Content-Type' => 'application/json; charset=UTF-8']);
         } catch (\Exception $e) {
             Log::error('Erreur lors de la récupération des services divers', [
                 'error' => $e->getMessage(),
@@ -56,7 +56,7 @@ class ServicesDivers extends Controller
 
                 $serviceDivers->delete();
 
-                return response()->json(['message' => "Service divers supprimé avec succès !"], 200);
+                return response()->json(['message' => "Service divers supprimé avec succès !"], 200, ['Content-Type' => 'application/json; charset=UTF-8']);
             }
 
             return response()->json(['message' => 'Aucun hôtel associé à cet utilisateur.'], 401);
@@ -91,7 +91,7 @@ class ServicesDivers extends Controller
                 ]);
 
 
-                return response()->json(['message' => "service divers mis à jour avec succès !"], 200);
+                return response()->json(['message' => "service divers mis à jour avec succès !"], 200, ['Content-Type' => 'application/json; charset=UTF-8']);
             }
 
             return response()->json(['message' => 'Aucun hôtel associé à cet utilisateur.'], 401);
@@ -117,7 +117,7 @@ class ServicesDivers extends Controller
                 $serviceDivers->delete();
 
 
-                return response()->json(['message' => "service divers effacé avec succès !"], 200);
+                return response()->json(['message' => "service divers effacé avec succès !"], 200, ['Content-Type' => 'application/json; charset=UTF-8']);
             }
 
             return response()->json(['message' => 'Aucun hôtel associé à cet utilisateur.'], 401);
@@ -151,7 +151,7 @@ class ServicesDivers extends Controller
                 ]);
 
 
-                return response()->json(['message' => "service divers ajouté avec succès !"], 200);
+                return response()->json(['message' => "service divers ajouté avec succès !"], 200, ['Content-Type' => 'application/json; charset=UTF-8']);
             }
 
             return response()->json(['message' => 'Aucun hôtel associé à cet utilisateur.'], 401);

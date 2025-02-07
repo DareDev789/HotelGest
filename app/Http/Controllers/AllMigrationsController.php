@@ -9,6 +9,7 @@ use App\Models\HotUsers;
 use App\Models\Agences;
 use App\Models\Clients;
 use App\Models\Bungalows;
+use App\Models\Macss;
 use App\Models\ReservationPrestations;
 use App\Models\Reservations;
 use App\Models\Prestations;
@@ -139,6 +140,13 @@ class AllMigrationsController extends Controller
                     $SocieteAgence->autres_info_agence = $agence->autres_info_agence;
 
                     $SocieteAgence->save();
+                } else {
+                    $colorFetch = Macss::where('categorie', $agence->color)->first();
+
+                    if ($colorFetch && $colorFetch->background) {
+                        $existingAgence->bg_color = $colorFetch->background;
+                        $existingAgence->save();
+                    }
                 }
             }
 
@@ -155,6 +163,7 @@ class AllMigrationsController extends Controller
             ], 500);
         }
     }
+
 
     public function allMigrationsClients(Request $request)
     {

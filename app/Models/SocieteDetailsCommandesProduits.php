@@ -9,9 +9,10 @@ class SocieteDetailsCommandesProduits extends Model
 {
     use SoftDeletes;
 
+    protected $table = 'societe_details_commande_produit';
     protected $primaryKey = 'id';
     public $incrementing = true;
-    protected $keyType = 'string';
+    protected $keyType = 'integer';
 
     protected $fillable = [
         'id_commande',

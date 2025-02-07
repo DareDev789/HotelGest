@@ -30,7 +30,7 @@ class AgencesController extends Controller
             return response()->json([
                 'success' => true,
                 'agences' => $agences,
-            ], 200);
+            ], 200, ['Content-Type' => 'application/json; charset=UTF-8']);
         } catch (\Exception $e) {
             Log::error('Erreur lors de la récupération des agences', [
                 'error' => $e->getMessage(),
@@ -75,7 +75,7 @@ class AgencesController extends Controller
                 ]);
 
 
-                return response()->json(['message' => "Agence mis à jour avec succès !"], 200);
+                return response()->json(['message' => "Agence mis à jour avec succès !"], 200, ['Content-Type' => 'application/json; charset=UTF-8']);
             }
 
             return response()->json(['message' => 'Aucun hôtel associé à cet utilisateur.'], 401);
@@ -99,7 +99,7 @@ class AgencesController extends Controller
 
                 $agence->delete();
 
-                return response()->json(['message' => "Agence supprimé avec succès !"], 200);
+                return response()->json(['message' => "Agence supprimé avec succès !"], 200, ['Content-Type' => 'application/json; charset=UTF-8']);
             }
 
             return response()->json(['message' => 'Aucun hôtel associé à cet utilisateur.'], 401);
@@ -142,7 +142,7 @@ class AgencesController extends Controller
                 ]);
 
 
-                return response()->json(['message' => "Agence créé avec succès !"], 200);
+                return response()->json(['message' => "Agence créé avec succès !"], 200, ['Content-Type' => 'application/json; charset=UTF-8']);
             }
 
             return response()->json(['message' => 'Aucun hôtel associé à cet utilisateur.'], 401);

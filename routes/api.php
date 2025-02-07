@@ -10,7 +10,9 @@ use App\Http\Controllers\PrestationsController;
 use App\Http\Controllers\ProduitController;
 use App\Http\Controllers\ServicesDivers;
 use App\Http\Controllers\SocieteCategorieMenuController;
+use App\Http\Controllers\SocieteCommandesController;
 use App\Http\Controllers\SocieteMenuController;
+use App\Http\Controllers\SocieteProduitsController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
@@ -47,6 +49,7 @@ Route::post('allMigrationsProduits', [MigrationMenuBarController::class, 'allMig
 Route::post('allMigrationsCommandes', [MigrationMenuBarController::class, 'allMigrationsCommandes']);
 Route::post('allMigrationsDetailsProduit', [MigrationMenuBarController::class, 'allMigrationsDetailsProduit']);
 Route::post('allMigrationsDetailsMenu', [MigrationMenuBarController::class, 'allMigrationsDetailsMenu']);
+Route::post('allMigrationsDepenses', [MigrationMenuBarController::class, 'allMigrationsDepenses']);
 
 Route::get('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 Route::post('register', [AuthController::class, 'register']);
@@ -105,6 +108,18 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id_reservation}', [ReservationsController::class, 'getOneReservation']);
         Route::delete('/{id_reservation}', [ReservationsController::class, 'AnnulerOneReservation']);
         Route::put('/{id_reservation}', [ReservationsController::class, 'ConfirmOneReservation']);
+        Route::put('edit/{id_reservation}', [ReservationsController::class, 'UpdateReservation']);
+        Route::prefix('detail')->group(function () {
+            Route::post('/', [ReservationsController::class, 'AddDetailReservation']);
+            Route::delete('/{id}', [ReservationsController::class, 'DeleteDetailReservation']);
+            Route::put('/{id}', [ReservationsController::class, 'UpdateDetailReservation']);
+        });
+
+        Route::prefix('detailDivers')->group(function () {
+            Route::post('/', [ReservationsController::class, 'AddDetailDivers']);
+            Route::delete('/{id}', [ReservationsController::class, 'DeleteDetailDivers']);
+            Route::put('/{id}', [ReservationsController::class, 'UpdateDetailDivers']);
+        });
     });
 
 
@@ -130,6 +145,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/{id}', [SocieteMenuController::class, 'destroy']);
     });
 
+    Route::prefix('produits')->group(function () {
+        Route::get('/', [SocieteProduitsController::class, 'getAllProduits']);
+        Route::post('/', [SocieteProduitsController::class, 'CreateProduit']);
+        Route::put('/{id}', [SocieteProduitsController::class, 'updateProduit']);
+        Route::delete('/{id}', [SocieteProduitsController::class, 'destroy']);
+    });
+
 
     Route::prefix('categories-menus')->group(function () {
         Route::get('/', [SocieteCategorieMenuController::class, 'getAllCategorieMenu']);
@@ -140,5 +162,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('categories-produits')->group(function () {
         Route::get('/', [ProduitController::class, 'getCategoriesProduitsAvecStock']);
+    });
+
+    Route::prefix('commandes')->group(function () {
+        Route::get('/', [SocieteCommandesController::class, 'getAllCommandes']);
+        Route::post('/', [SocieteCommandesController::class, 'createCommandes']);
     });
 });

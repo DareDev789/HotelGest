@@ -10,7 +10,7 @@ class SocieteReservation extends Model
     use SoftDeletes;
 
     protected $primaryKey = 'id_reservation';
-    public $incrementing = false; // UUID utilisé comme clé primaire
+    public $incrementing = false;
     protected $keyType = 'string';
 
     protected $fillable = [

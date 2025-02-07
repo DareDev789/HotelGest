@@ -6,12 +6,14 @@ use App\Models\Categorie_Menu;
 use App\Models\Categorie_Produit;
 use App\Models\CommandesMenus;
 use App\Models\CommandesProduits;
+use App\Models\Depenses;
 use App\Models\Reservations;
 use App\Models\SocieteAgence;
 use App\Models\SocieteCategorieMenu;
 use App\Models\SocieteCategorieProduit;
 use App\Models\SocieteClient;
 use App\Models\SocieteCommande;
+use App\Models\SocieteDepenses;
 use App\Models\SocieteDetailsCommandesMenus;
 use App\Models\SocieteDetailsCommandesProduits;
 use App\Models\SocieteDevise;
@@ -22,6 +24,8 @@ use App\Models\Produit;
 use App\Models\SocieteProduit;
 use App\Models\SocieteProduitStock;
 use App\Models\SocieteUser;
+use Carbon\Carbon;
+use Date;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
@@ -283,6 +287,7 @@ class MigrationMenuBarController extends Controller
                     $SocieteCommande->type_client = $commande->type_client;
                     $SocieteCommande->statut_reservation = $commande->facture;
                     $SocieteCommande->devise = $devise->devise;
+                    $SocieteCommande->created_at = $commande->date_reservation;
 
                     $SocieteCommande->save();
                 }
@@ -318,15 +323,21 @@ class MigrationMenuBarController extends Controller
 
                 $nomMenu = SocieteMenu::where('nom_menu', $detailsMenu->nom_menu)->where('id_hotel', $detailsMenu->id_hotel)->first();
 
+                if ($nomMenu) {
+                    $idMenu = $nomMenu->id;
+                } else {
+                    $idMenu = null;
+                }
                 $SocieteDetailsCommandesMenus = new SocieteDetailsCommandesMenus();
                 $SocieteDetailsCommandesMenus->id_commande = $detailsMenu->ident_reservation;
                 $SocieteDetailsCommandesMenus->quantite = $detailsMenu->quantite;
-                $SocieteDetailsCommandesMenus->id_menu = $nomMenu->id;
+                $SocieteDetailsCommandesMenus->id_menu = $idMenu;
                 $SocieteDetailsCommandesMenus->prix_menu = $detailsMenu->prix_menu;
                 $SocieteDetailsCommandesMenus->nom_menu = $detailsMenu->nom_menu;
                 $SocieteDetailsCommandesMenus->id_hotel = $detailsMenu->id_hotel;
 
                 $SocieteDetailsCommandesMenus->save();
+
             }
 
             return response()->json([
@@ -350,17 +361,38 @@ class MigrationMenuBarController extends Controller
 
             foreach ($detailsProduits as $detailsProduit) {
                 // Vérification des clés étrangères
-                if ($detailsProduit->ident_reservation && !SocieteCommande::where('id_commande', $detailsProduit->ident_reservation)->first()) {
-                    Log::warning('Commande introuvable ou id_reservation vide', ['id_commande' => $detailsProduit->ident_reservation]);
+                if ($detailsProduit->ident_reservation && !SocieteCommande::where('id_commande', $detailsProduit->ident_reservation)->exists()) {
+                    Log::warning('Commande introuvable ou id_reservation vide', [
+                        'id_commande' => $detailsProduit->ident_reservation
+                    ]);
                     continue;
                 }
 
-                $nomMenu = SocieteProduit::where('nom_produit', $detailsProduit->nom_produit)->where('id_hotel', $detailsProduit->id_hotel)->first();
+                // Vérification si les données existent avant la requête
+                if (empty($detailsProduit->nom_produit) || empty($detailsProduit->id_hotel)) {
+                    Log::warning('Données produit incomplètes', [
+                        'nom_produit' => $detailsProduit->nom_produit,
+                        'id_hotel' => $detailsProduit->id_hotel
+                    ]);
+                    continue;
+                }
 
+                // Recherche du produit dans la table SocieteProduit
+                $nomProduit = SocieteProduit::where('nom_produit', $detailsProduit->nom_produit)
+                    ->where('id_hotel', $detailsProduit->id_hotel)
+                    ->first();
+
+                if (!$nomProduit) {
+                    $idproduit = null;
+                } else {
+                    $idproduit = $nomProduit->id;
+                }
+
+                // Création et sauvegarde des détails de commande
                 $SocieteDetailsCommandesProduits = new SocieteDetailsCommandesProduits();
                 $SocieteDetailsCommandesProduits->id_commande = $detailsProduit->ident_reservation;
                 $SocieteDetailsCommandesProduits->quantite = $detailsProduit->quantite;
-                $SocieteDetailsCommandesProduits->id_produit = $nomMenu->id;
+                $SocieteDetailsCommandesProduits->id_produit = $idproduit;
                 $SocieteDetailsCommandesProduits->prix_produit = $detailsProduit->prix_unitaire;
                 $SocieteDetailsCommandesProduits->nom_produit = $detailsProduit->nom_produit;
                 $SocieteDetailsCommandesProduits->id_hotel = $detailsProduit->id_hotel;
@@ -369,17 +401,69 @@ class MigrationMenuBarController extends Controller
             }
 
             return response()->json([
-                'message' => 'Migration des details de produit effectuée avec succès.',
+                'message' => 'Migration des détails de produit effectuée avec succès.',
             ], 200);
 
         } catch (\Exception $e) {
-            Log::error('Erreur lors de la migration des details de produit', ['error' => $e->getMessage()]);
+            Log::error('Erreur lors de la migration des détails de produit', [
+                'error' => $e->getMessage()
+            ]);
 
             return response()->json([
-                'message' => 'Une erreur est survenue pendant la migration des details de produit.',
+                'message' => 'Une erreur est survenue pendant la migration des détails de produit.',
                 'error' => $e->getMessage(),
             ], 500);
         }
     }
 
+
+    public function allMigrationsDepenses(Request $request)
+    {
+        try {
+            DB::beginTransaction(); // Démarrer la transaction
+
+            Depenses::chunk(100, function ($depenses) {
+                foreach ($depenses as $depense) {
+
+                    if ($depense->id_hotel && !SocieteHotel::where('id_hotel', $depense->id_hotel)->exists()) {
+                        Log::warning('id_hotel introuvable ou id_reservation vide', [
+                            'id_hotel' => $depense->id_hotel
+                        ]);
+                        continue;
+                    }
+                    if (!$depense->id_hotel) {
+                        continue;
+                    }
+                    // Vérifier si l'utilisateur existe
+                    $recupererIdUser = SocieteUser::where('username', $depense->save_by)
+                        ->where('id_hotel', $depense->id_hotel)
+                        ->first();
+
+                    $cat = ($depense->categorie == '1') ? "hotel" : "autres";
+
+
+                    SocieteDepenses::insert([
+                        'categorie' => $cat,
+                        'description' => $depense->description,
+                        'montant' => $depense->montant,
+                        'save_by' => $recupererIdUser?->id,
+                        'id_hotel' => $depense->id_hotel,
+                        'created_at' => $depense->date_save,
+                    ]);
+                }
+            });
+
+            DB::commit();
+
+            Log::info("Migration des dépenses terminée avec succès.");
+
+            return response()->json(['message' => 'Migration effectuée avec succès.'], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error("Erreur lors de la migration des dépenses : " . $e->getMessage());
+
+            return response()->json(['error' => 'Erreur lors de la migration des dépenses.', 'details' => $e->getMessage()], 500);
+        }
+    }
 }

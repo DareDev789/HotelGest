@@ -31,7 +31,7 @@ class HotelController extends Controller
             return response()->json([
                 'success' => true,
                 'hotel' => $hotel,
-            ], 200);
+            ], 200, ['Content-Type' => 'application/json; charset=UTF-8']);
         } catch (\Exception $e) {
             Log::error('Erreur lors de la récupération des informations', [
                 'error' => $e->getMessage(),
@@ -61,7 +61,7 @@ class HotelController extends Controller
             return response()->json([
                 'success' => true,
                 'factureSetting' => $factureSetting,
-            ], 200);
+            ], 200, ['Content-Type' => 'application/json; charset=UTF-8']);
         } catch (\Exception $e) {
             Log::error('Erreur lors de la récupération des informations', [
                 'error' => $e->getMessage(),
@@ -102,7 +102,7 @@ class HotelController extends Controller
             // Mise à jour des données
             $setting->update($validatedData);
 
-            return response()->json(['message' => "Facturation mise à jour avec succès !"], 200);
+            return response()->json(['message' => "Facturation mise à jour avec succès !"], 200, ['Content-Type' => 'application/json; charset=UTF-8']);
 
         } catch (\Exception $e) {
             Log::error('Erreur lors de la mise à jour de la facturation', [

@@ -9,6 +9,8 @@ class SocieteDetailsCommandesMenus extends Model
 {
     use SoftDeletes;
 
+    protected $table = 'societe_details_commande_menu';
+
     protected $primaryKey = 'id';
     public $incrementing = true;
     protected $keyType = 'string';

@@ -34,4 +34,8 @@ class SocieteProduit extends Model
     {
         return $this->hasMany(SocieteProduitStock::class, 'id', 'id_produit');
     }
+    public function commandes()
+    {
+        return $this->hasMany(SocieteDetailsCommandesProduits::class, 'id', 'id_produit');
+    }
 }

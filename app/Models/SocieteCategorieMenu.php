@@ -18,7 +18,7 @@ class SocieteCategorieMenu extends Model
         'id_hotel',
     ];
 
-    public function hotel() 
+    public function hotel()
     {
         return $this->belongsTo(Hotel::class, 'id_hotel', 'id_hotel');
     }

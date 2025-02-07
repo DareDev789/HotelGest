@@ -11,7 +11,7 @@ class SocieteUser extends Model
 {
     use HasFactory, HasApiTokens, SoftDeletes;
 
-    protected $fillable = [ 
+    protected $fillable = [
         'username',
         'password',
         'email',

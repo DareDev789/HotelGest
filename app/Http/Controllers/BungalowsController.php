@@ -16,7 +16,7 @@ class BungalowsController extends Controller
             $user = Auth::user();
             if ($user && $user->id_hotel) {
                 $bungalows = SocieteBungalow::where('id_hotel', $user->id_hotel)->with('typeBungalow')->get();
-                return response()->json(['bungalows' => $bungalows], 200);
+                return response()->json(['bungalows' => $bungalows], 200, ['Content-Type' => 'application/json; charset=UTF-8']);
             }
 
             return response()->json(['message' => 'Aucun hôtel associé à cet utilisateur.'], 401);
@@ -41,7 +41,7 @@ class BungalowsController extends Controller
                 ]);
 
                 $bungalow = SocieteBungalow::where('ID', $request->id)->first();
-                return response()->json(['bungalow' => $bungalow], 200);
+                return response()->json(['bungalow' => $bungalow], 200, ['Content-Type' => 'application/json; charset=UTF-8']);
             }
 
             return response()->json(['message' => 'Aucun hôtel associé à cet utilisateur.'], 401);
@@ -88,7 +88,7 @@ class BungalowsController extends Controller
                     ]);
                 }
 
-                return response()->json(['message' => "Bungalow enregistré avec succès !"], 200);
+                return response()->json(['message' => "Bungalow enregistré avec succès !"], 200, ['Content-Type' => 'application/json; charset=UTF-8']);
             }
 
             return response()->json(['message' => 'Aucun hôtel associé à cet utilisateur.'], 401);
@@ -137,7 +137,7 @@ class BungalowsController extends Controller
                     ]);
                 }
 
-                return response()->json(['message' => "Bungalow mis à jour avec succès !"], 200);
+                return response()->json(['message' => "Bungalow mis à jour avec succès !"], 200, ['Content-Type' => 'application/json; charset=UTF-8']);
             }
 
             return response()->json(['message' => 'Aucun hôtel associé à cet utilisateur.'], 401);
@@ -163,7 +163,7 @@ class BungalowsController extends Controller
 
                 $bungalow->delete();
 
-                return response()->json(['message' => "Bungalow supprimé avec succès !"], 200);
+                return response()->json(['message' => "Bungalow supprimé avec succès !"], 200, ['Content-Type' => 'application/json; charset=UTF-8']);
             }
 
             return response()->json(['message' => 'Aucun hôtel associé à cet utilisateur.'], 401);
