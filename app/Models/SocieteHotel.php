@@ -10,7 +10,7 @@ class SocieteHotel extends Model
     use SoftDeletes;
 
     protected $primaryKey = 'id_hotel';
-    public $incrementing = false; // UUID utilisé comme clé primaire
+    public $incrementing = false;
     protected $keyType = 'string';
 
     protected $fillable = [
@@ -25,6 +25,7 @@ class SocieteHotel extends Model
         'ville',
         'pays',
         'nom_societe',
+        'logo',
     ];
 
     public function users()

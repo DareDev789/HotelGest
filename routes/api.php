@@ -3,6 +3,7 @@
 use App\Http\Controllers\AccomptesController;
 use App\Http\Controllers\AgencesController;
 use App\Http\Controllers\ClientsController;
+use App\Http\Controllers\DepensesController;
 use App\Http\Controllers\FacturesController;
 use App\Http\Controllers\HotelController;
 use App\Http\Controllers\MigrationMenuBarController;
@@ -11,8 +12,11 @@ use App\Http\Controllers\ProduitController;
 use App\Http\Controllers\ServicesDivers;
 use App\Http\Controllers\SocieteCategorieMenuController;
 use App\Http\Controllers\SocieteCommandesController;
+use App\Http\Controllers\SocieteFinanceService;
 use App\Http\Controllers\SocieteMenuController;
 use App\Http\Controllers\SocieteProduitsController;
+use App\Http\Controllers\SocieteProfilController;
+use App\Http\Controllers\SocieteStockProduit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
@@ -50,6 +54,7 @@ Route::post('allMigrationsCommandes', [MigrationMenuBarController::class, 'allMi
 Route::post('allMigrationsDetailsProduit', [MigrationMenuBarController::class, 'allMigrationsDetailsProduit']);
 Route::post('allMigrationsDetailsMenu', [MigrationMenuBarController::class, 'allMigrationsDetailsMenu']);
 Route::post('allMigrationsDepenses', [MigrationMenuBarController::class, 'allMigrationsDepenses']);
+Route::post('allMigrationsAccomptesCommandes', [MigrationMenuBarController::class, 'allMigrationsAccomptesCommandes']);
 
 Route::get('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 Route::post('register', [AuthController::class, 'register']);
@@ -125,6 +130,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('hotel')->group(function () {
         Route::get('/', [HotelController::class, 'getHotelInfo']);
+        Route::post('/', [HotelController::class, 'updateHotelInfo']);
+    });
+
+    Route::prefix('profil')->group(function () {
+        Route::get('/', [SocieteProfilController::class, 'getUserInfo']);
+        Route::post('/', [SocieteProfilController::class, 'updateUserInfo']);
+        Route::get('AllProfil', [SocieteProfilController::class, 'getAllUsers']);
     });
 
     Route::prefix('facture')->group(function () {
@@ -150,6 +162,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/', [SocieteProduitsController::class, 'CreateProduit']);
         Route::put('/{id}', [SocieteProduitsController::class, 'updateProduit']);
         Route::delete('/{id}', [SocieteProduitsController::class, 'destroy']);
+        Route::prefix('changer-categorie')->group(function () {
+            Route::post('/', [SocieteProduitsController::class, 'updateCategorieProduit']);
+        });
+        Route::prefix('stock')->group(function () {
+            Route::post('/', [SocieteStockProduit::class, 'AddStock']);
+            Route::get('{id}', [SocieteStockProduit::class, 'showStock']);
+            Route::delete('{id}', [SocieteStockProduit::class, 'DeleteStock']);
+        });
     });
 
 
@@ -162,10 +182,36 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('categories-produits')->group(function () {
         Route::get('/', [ProduitController::class, 'getCategoriesProduitsAvecStock']);
+        Route::post('/', [ProduitController::class, 'CreateCategorieProduit']);
+        Route::put('{id}', [ProduitController::class, 'updateCategorieProduit']);
+        Route::delete('{id}', [ProduitController::class, 'destroy']);
     });
 
     Route::prefix('commandes')->group(function () {
         Route::get('/', [SocieteCommandesController::class, 'getAllCommandes']);
+        Route::get('{id}', [SocieteCommandesController::class, 'getOneCommande']);
         Route::post('/', [SocieteCommandesController::class, 'createCommandes']);
+        Route::prefix('details')->group(function () {
+            Route::post('produit', [SocieteCommandesController::class, 'CreateDetailProduit']);
+            Route::post('menu', [SocieteCommandesController::class, 'CreateDetailMenu']);
+            Route::delete('produit/{id}', [SocieteCommandesController::class, 'DeleteDetailProduit']);
+            Route::delete('menu/{id}', [SocieteCommandesController::class, 'DeleteDetailMenu']);
+        });
+
+        Route::prefix('accomptes')->group(function () {
+            Route::post('/', [AccomptesController::class, 'createAccompteCommandes']);
+            Route::put('/{id}', [AccomptesController::class, 'updateAccompteCommandes']);
+            Route::put('paid/{id}', [AccomptesController::class, 'PaidAccompteCommandes']);
+        });
+    });
+
+    Route::prefix('depenses')->group(function () {
+        Route::get('/', [DepensesController::class, 'getAllDepenses']);
+        Route::post('/', [DepensesController::class, 'CreateDepenses']);
+        Route::delete('{id}', [DepensesController::class, 'DeleteDepenses']);
+    });
+
+    Route::prefix('statistics')->group(function () {
+        Route::get('/', [SocieteFinanceService::class, 'getFinancesYear']);
     });
 });

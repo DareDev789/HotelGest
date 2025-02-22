@@ -91,13 +91,6 @@ class SocieteCategorieMenuController extends Controller
             }
 
             $validated = $request->validate([
-                'id_categorie' => 'sometimes|exists:societe_categorie_menu,id',
-                'nom_menu' => 'sometimes|string|max:255',
-                'prix_menu' => 'sometimes|numeric',
-                'autres_info_menu' => 'sometimes|string',
-            ]);
-
-            $validated = $request->validate([
                 'nom_categorie_menu' => 'sometimes|string|max:255',
             ]);
 

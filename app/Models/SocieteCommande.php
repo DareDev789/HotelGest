@@ -49,8 +49,8 @@ class SocieteCommande extends Model
     {
         return $this->hasMany(SocieteDetailsCommandesMenus::class, 'id_commande', 'id_commande');
     }
-    // public function accomptes()
-    // {
-    //     return $this->hasMany(SocieteAccomptesCommandes::class, 'id_commande', 'id_commande');
-    // }
+    public function accomptes()
+    {
+        return $this->hasMany(SocieteAccomptesCommandes::class, 'id_commande', 'id_commande');
+    }
 }

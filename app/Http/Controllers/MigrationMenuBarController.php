@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Accomptes;
 use App\Models\Categorie_Menu;
 use App\Models\Categorie_Produit;
 use App\Models\CommandesMenus;
 use App\Models\CommandesProduits;
 use App\Models\Depenses;
+use App\Models\Factures;
 use App\Models\Reservations;
+use App\Models\SocieteAccomptesCommandes;
 use App\Models\SocieteAgence;
 use App\Models\SocieteCategorieMenu;
 use App\Models\SocieteCategorieProduit;
@@ -17,6 +20,7 @@ use App\Models\SocieteDepenses;
 use App\Models\SocieteDetailsCommandesMenus;
 use App\Models\SocieteDetailsCommandesProduits;
 use App\Models\SocieteDevise;
+use App\Models\SocieteFacturesCommandes;
 use App\Models\SocieteHotel;
 use App\Models\SocieteMenu;
 use App\Models\Menu;
@@ -216,10 +220,16 @@ class MigrationMenuBarController extends Controller
                     ->where('id_hotel', $stock->id_hotel)
                     ->first();
 
-                SocieteProduitStock::create([
+                $nouveau_prix = $stock->quantite_stock * $stock->prix_achat;
+
+                if ($nouveau_prix > 99999999.99) {
+                    continue;
+                }
+
+                SocieteProduitStock::insert([
                     'id_produit' => $produitMap[$produitKey],
                     'stock' => $stock->quantite_stock,
-                    'prix_achat' => $stock->prix_achat,
+                    'prix_achat' => $nouveau_prix,
                     'id_user' => $recupererIdUser ? $recupererIdUser->id : null,
                     'id_hotel' => $stock->id_hotel,
                     'created_at' => $stock->date_ajout,
@@ -237,6 +247,35 @@ class MigrationMenuBarController extends Controller
             Log::error("Erreur lors de la migration des produits : " . $e->getMessage());
 
             return response()->json(['error' => 'Erreur lors de la migration des produits.', 'details' => $e->getMessage()], 500);
+        }
+    }
+
+    public function updatePrixAchat()
+    {
+        try {
+            $stocks = SocieteProduitStock::all();
+
+            foreach ($stocks as $stock) {
+                $nouveau_prix = $stock->stock * $stock->prix_achat;
+            
+                if ($nouveau_prix > 99999999.99) {
+                    continue;
+                }
+            
+                $stock->prix_achat = $nouveau_prix;
+                $stock->save();
+            }
+            
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Prix d\'achat mis à jour avec succès.'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Une erreur est survenue: ' . $e->getMessage(),
+            ], 500);
         }
     }
 
@@ -268,9 +307,6 @@ class MigrationMenuBarController extends Controller
                 $existingCommande = SocieteCommande::where('id_commande', $commande->ident_reservation)->first();
 
                 if (!$existingCommande) {
-                    $SocieteCommande = new SocieteCommande();
-                    $ident_reservation = $commande->ident_reservation;
-
                     $id_agence = null;
 
                     if (!$devise) {
@@ -280,16 +316,16 @@ class MigrationMenuBarController extends Controller
 
                     $id_client = empty($commande->id_client) ? null : $commande->id_client;
 
-                    $SocieteCommande->id_commande = $commande->ident_reservation;
-                    $SocieteCommande->id_client = $id_client;
-                    $SocieteCommande->id_agence = $id_agence;
-                    $SocieteCommande->id_hotel = $commande->id_hotel;
-                    $SocieteCommande->type_client = $commande->type_client;
-                    $SocieteCommande->statut_reservation = $commande->facture;
-                    $SocieteCommande->devise = $devise->devise;
-                    $SocieteCommande->created_at = $commande->date_reservation;
-
-                    $SocieteCommande->save();
+                    SocieteCommande::insert([
+                        'id_commande' => $commande->ident_reservation,
+                        'id_client' => $id_client,
+                        'id_agence' => $id_agence,
+                        'id_hotel' => $commande->id_hotel,
+                        'type_client' => $commande->type_client,
+                        'statut_reservation' => $commande->facture,
+                        'devise' => $devise->devise,
+                        'created_at' => $commande->date_reservation,
+                    ]);
                 }
             }
 
@@ -321,6 +357,10 @@ class MigrationMenuBarController extends Controller
                     continue;
                 }
 
+                if ($detailsMenu->ID && SocieteDetailsCommandesMenus::where('id', $detailsMenu->ID)->first()){
+                    continue;
+                }
+                
                 $nomMenu = SocieteMenu::where('nom_menu', $detailsMenu->nom_menu)->where('id_hotel', $detailsMenu->id_hotel)->first();
 
                 if ($nomMenu) {
@@ -329,6 +369,7 @@ class MigrationMenuBarController extends Controller
                     $idMenu = null;
                 }
                 $SocieteDetailsCommandesMenus = new SocieteDetailsCommandesMenus();
+                $SocieteDetailsCommandesMenus->id = $detailsMenu->ID;
                 $SocieteDetailsCommandesMenus->id_commande = $detailsMenu->ident_reservation;
                 $SocieteDetailsCommandesMenus->quantite = $detailsMenu->quantite;
                 $SocieteDetailsCommandesMenus->id_menu = $idMenu;
@@ -464,6 +505,78 @@ class MigrationMenuBarController extends Controller
             Log::error("Erreur lors de la migration des dépenses : " . $e->getMessage());
 
             return response()->json(['error' => 'Erreur lors de la migration des dépenses.', 'details' => $e->getMessage()], 500);
+        }
+    }
+
+    public function allMigrationsAccomptesCommandes(Request $request)
+    {
+        try {
+            $accomptes = Accomptes::all();
+
+            foreach ($accomptes as $accompte) {
+                if (SocieteAccomptesCommandes::where('id', $accompte->ID)->exists()) {
+                    continue; // Passer si l'acompte existe déjà
+                }
+
+                // Vérification des clés étrangères
+                if ($accompte->ident_reservation && !SocieteCommande::where('id_commande', $accompte->ident_reservation)->exists()) {
+                    Log::warning('Réservation introuvable', ['id_reservation' => $accompte->ident_reservation]);
+                    continue;
+                }
+
+                if ($accompte->id_hotel && !SocieteHotel::where('id_hotel', $accompte->id_hotel)->exists()) {
+                    Log::warning('Hôtel introuvable', ['id_hotel' => $accompte->id_hotel]);
+                    continue;
+                }
+
+                $recupererIdUser = SocieteUser::where('username', $accompte->save_by)->first();
+
+                if (!$recupererIdUser) {
+                    Log::warning('Utilisateur introuvable', ['username' => $accompte->save_by]);
+                    continue;
+                }
+
+                $facture = Factures::where('ident_reservation', $accompte->ident_reservation)
+                    ->where('id_hotel', $accompte->id_hotel)
+                    ->where('link', '!=', '')
+                    ->first();
+
+                $societeAccomptesCommande = new SocieteAccomptesCommandes();
+                $societeAccomptesCommande->id_commande = $accompte->ident_reservation;
+                $societeAccomptesCommande->montant = $accompte->montant;
+                $societeAccomptesCommande->save_by = $recupererIdUser->id;
+                $societeAccomptesCommande->created_at = $accompte->date_save;
+                $societeAccomptesCommande->id_hotel = $accompte->id_hotel;
+                $societeAccomptesCommande->paid = true;
+
+                $societeAccomptesCommande->save();
+
+                if ($facture) {
+                    $SocieteFacturesCommande = new SocieteFacturesCommandes();
+                    $SocieteFacturesCommande->id_accompte = $societeAccomptesCommande->id; // **L'ID est maintenant disponible**
+                    $SocieteFacturesCommande->date_facture = $facture->date_facture;
+                    $SocieteFacturesCommande->user = $recupererIdUser->id;
+                    $SocieteFacturesCommande->num_facture = $facture->num_facture;
+                    $SocieteFacturesCommande->created_at = $facture->date_facture;
+                    $SocieteFacturesCommande->link = $facture->link;
+                    $SocieteFacturesCommande->id_hotel = $accompte->id_hotel;
+
+                    $SocieteFacturesCommande->save();
+                }
+
+            }
+
+            return response()->json([
+                'message' => 'Migration des Accomptes effectuée avec succès.',
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de la migration des accomptes', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'message' => 'Une erreur est survenue pendant la migration des Accomptes.',
+                'error' => $e->getMessage(),
+            ], 500);
         }
     }
 }

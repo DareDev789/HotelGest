@@ -30,4 +30,8 @@ class SocieteMenu extends Model
     {
         return $this->belongsTo(SocieteCategorieMenu::class, 'id_categorie', 'id');
     }
+    public function commandes()
+    {
+        return $this->hasMany(SocieteDetailsCommandesMenus::class, 'id_menu', 'id');
+    }
 }

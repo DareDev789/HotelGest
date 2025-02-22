@@ -6,10 +6,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class SocieteFactures extends Model
+class SocieteFacturesCommandes extends Model
 {
 
-    protected $table = 'societe_factures';
+    protected $table = 'societe_factures_commandes';
     protected $primaryKey = 'id';
     public $incrementing = true;
 
@@ -29,7 +29,7 @@ class SocieteFactures extends Model
 
     public function accompte()
     {
-        return $this->belongsTo(SocieteAccomptesReservations::class, 'id_accompte', 'id');
+        return $this->belongsTo(SocieteAccomptesCommandes::class, 'id_accompte', 'id');
     }
 
     public function user()

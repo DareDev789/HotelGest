@@ -19,6 +19,7 @@ class SocieteUser extends Model
         'id_hotel',
         'niveau_user',
         'validated',
+        'profil',
         'auth',
     ];
 

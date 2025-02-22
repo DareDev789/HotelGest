@@ -17,7 +17,7 @@ class SocieteProduit extends Model
     protected $fillable = [
         'id_categorie',
         'nom_produit',
-        'prix_vente', 
+        'prix_vente',
         'quantifie',
         'id_hotel',
     ];
@@ -32,10 +32,11 @@ class SocieteProduit extends Model
     }
     public function Stock()
     {
-        return $this->hasMany(SocieteProduitStock::class, 'id', 'id_produit');
+        return $this->hasMany(SocieteProduitStock::class, 'id_produit', 'id');
     }
     public function commandes()
     {
-        return $this->hasMany(SocieteDetailsCommandesProduits::class, 'id', 'id_produit');
+        return $this->hasMany(SocieteDetailsCommandesProduits::class, 'id_produit', 'id');
     }
+
 }
