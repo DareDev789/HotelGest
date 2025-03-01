@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\SocieteAccomptesCommandes;
+use App\Models\SocieteProduitStock;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -41,14 +42,18 @@ class SocieteFinanceService extends Controller
                 ->get();
 
             $totalRentreArgentReser = SocieteAccomptesReservations::whereYear('created_at', $selectedYear)
-            ->with('reservation', 'user')
+                ->with('reservation', 'user')
                 ->where('paid', true)
                 ->where('id_hotel', $user->id_hotel)
                 ->get();
 
             $totalRentreArgentCommande = SocieteAccomptesCommandes::whereYear('created_at', $selectedYear)
-            ->with('Commande', 'user')
+                ->with('Commande', 'user')
                 ->where('paid', true)
+                ->where('id_hotel', $user->id_hotel)
+                ->get();
+
+            $totalDepenseStock = SocieteProduitStock::whereYear('created_at', $selectedYear)
                 ->where('id_hotel', $user->id_hotel)
                 ->get();
 
@@ -57,6 +62,7 @@ class SocieteFinanceService extends Controller
                 'total_depenses' => $totalDepenses,
                 'totalRentreArgentReser' => $totalRentreArgentReser,
                 'totalRentreArgentCommande' => $totalRentreArgentCommande,
+                'totalDepenseStock' => $totalDepenseStock
             ]);
 
         } catch (\Exception $e) {

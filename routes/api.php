@@ -17,6 +17,7 @@ use App\Http\Controllers\SocieteMenuController;
 use App\Http\Controllers\SocieteProduitsController;
 use App\Http\Controllers\SocieteProfilController;
 use App\Http\Controllers\SocieteStockProduit;
+use App\Http\Controllers\UtilisateursControllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
@@ -31,30 +32,32 @@ Route::middleware('auth:sanctum')->post('/tokens/create', function (Request $req
 
 // Authentification
 Route::post('login', [AuthController::class, 'login']);
-Route::post('allMigrationsHotel', [AllMigrationsController::class, 'allMigrationsHotel']);
-Route::post('allMigrationsUsers', [AllMigrationsController::class, 'allMigrationsUsers']);
-Route::post('allMigrationsAgences', [AllMigrationsController::class, 'allMigrationsAgences']);
-Route::post('allMigrationsClients', [AllMigrationsController::class, 'allMigrationsClients']);
-Route::post('allMigrationsBungalows', [AllMigrationsController::class, 'allMigrationsBungalows']);
-Route::post('allMigrationsPrestaions', [AllMigrationsController::class, 'allMigrationsPrestaions']);
-Route::post('allMigrationsDivers', [AllMigrationsController::class, 'allMigrationsDivers']);
-Route::post('allMigrationsTypeBungalows', [AllMigrationsController::class, 'allMigrationsTypeBungalows']);
-Route::post('allMigrationsFactureSetting', [AllMigrationsController::class, 'allMigrationsFactureSetting']);
-Route::post('allMigrationsReservations', [AllMigrationsController::class, 'allMigrationsReservations']);
-Route::post('allMigrationsDetailsPrestaions', [AllMigrationsController::class, 'allMigrationsDetailsPrestaions']);
-Route::post('allMigrationsReservationsDivers', [AllMigrationsController::class, 'allMigrationsReservationsDivers']);
-Route::post('allMigrationsAccomptes', [AllMigrationsController::class, 'allMigrationsAccomptes']);
+// Route::post('allMigrationsHotel', [AllMigrationsController::class, 'allMigrationsHotel']);
+// Route::post('allMigrationsUsers', [AllMigrationsController::class, 'allMigrationsUsers']);
+// Route::post('allMigrationsAgences', [AllMigrationsController::class, 'allMigrationsAgences']);
+// Route::post('allMigrationsClients', [AllMigrationsController::class, 'allMigrationsClients']);
+// Route::post('allMigrationsBungalows', [AllMigrationsController::class, 'allMigrationsBungalows']);
+// Route::post('allMigrationsPrestaions', [AllMigrationsController::class, 'allMigrationsPrestaions']);
+// Route::post('allMigrationsDivers', [AllMigrationsController::class, 'allMigrationsDivers']);
+// Route::post('allMigrationsTypeBungalows', [AllMigrationsController::class, 'allMigrationsTypeBungalows']);
+// Route::post('allMigrationsFactureSetting', [AllMigrationsController::class, 'allMigrationsFactureSetting']);
+// Route::post('allMigrationsReservations', [AllMigrationsController::class, 'allMigrationsReservations']);
+// Route::post('allMigrationsDetailsPrestaions', [AllMigrationsController::class, 'allMigrationsDetailsPrestaions']);
+// Route::post('allMigrationsReservationsDivers', [AllMigrationsController::class, 'allMigrationsReservationsDivers']);
+// Route::post('allMigrationsAccomptes', [AllMigrationsController::class, 'allMigrationsAccomptes']);
 
 
-Route::post('allMigrationsCategorieMenu', [MigrationMenuBarController::class, 'allMigrationsCategorieMenu']);
-Route::post('allMigrationsMenu', [MigrationMenuBarController::class, 'allMigrationsMenu']);
-Route::post('allMigrationsCategorieProduit', [MigrationMenuBarController::class, 'allMigrationsCategorieProduit']);
-Route::post('allMigrationsProduits', [MigrationMenuBarController::class, 'allMigrationsProduits']);
-Route::post('allMigrationsCommandes', [MigrationMenuBarController::class, 'allMigrationsCommandes']);
-Route::post('allMigrationsDetailsProduit', [MigrationMenuBarController::class, 'allMigrationsDetailsProduit']);
-Route::post('allMigrationsDetailsMenu', [MigrationMenuBarController::class, 'allMigrationsDetailsMenu']);
-Route::post('allMigrationsDepenses', [MigrationMenuBarController::class, 'allMigrationsDepenses']);
-Route::post('allMigrationsAccomptesCommandes', [MigrationMenuBarController::class, 'allMigrationsAccomptesCommandes']);
+// Route::post('allMigrationsCategorieMenu', [MigrationMenuBarController::class, 'allMigrationsCategorieMenu']);
+// Route::post('allMigrationsMenu', [MigrationMenuBarController::class, 'allMigrationsMenu']);
+// Route::post('allMigrationsCategorieProduit', [MigrationMenuBarController::class, 'allMigrationsCategorieProduit']);
+// Route::post('allMigrationsProduits', [MigrationMenuBarController::class, 'allMigrationsProduits']);
+// Route::post('allMigrationsCommandes', [MigrationMenuBarController::class, 'allMigrationsCommandes']);
+// Route::post('allMigrationsDetailsProduit', [MigrationMenuBarController::class, 'allMigrationsDetailsProduit']);
+// Route::post('allMigrationsDetailsMenu', [MigrationMenuBarController::class, 'allMigrationsDetailsMenu']);
+// Route::post('allMigrationsDepenses', [MigrationMenuBarController::class, 'allMigrationsDepenses']);
+// Route::post('allMigrationsAccomptesCommandes', [MigrationMenuBarController::class, 'allMigrationsAccomptesCommandes']);
+
+// Route::post('MakePassword', [UtilisateursControllers::class, 'MakePassword']);
 
 Route::get('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 Route::post('register', [AuthController::class, 'register']);
@@ -125,6 +128,12 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::delete('/{id}', [ReservationsController::class, 'DeleteDetailDivers']);
             Route::put('/{id}', [ReservationsController::class, 'UpdateDetailDivers']);
         });
+
+        Route::prefix('detailPrestation')->group(function () {
+            Route::post('/', [ReservationsController::class, 'AddDetailPrestations']);
+            Route::delete('/{id}', [ReservationsController::class, 'DeleteDetailPrestations']);
+            Route::put('/{id}', [ReservationsController::class, 'UpdateDetailPrestation']);
+        });
     });
 
 
@@ -137,6 +146,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [SocieteProfilController::class, 'getUserInfo']);
         Route::post('/', [SocieteProfilController::class, 'updateUserInfo']);
         Route::get('AllProfil', [SocieteProfilController::class, 'getAllUsers']);
+        Route::prefix('compte')->group(function () {
+            Route::post('/', [UtilisateursControllers::class, 'ChangePassword']);
+            Route::delete('{id}', [UtilisateursControllers::class, 'deleteUser']);
+        });
     });
 
     Route::prefix('facture')->group(function () {

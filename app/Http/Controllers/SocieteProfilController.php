@@ -126,6 +126,4 @@ class SocieteProfilController extends Controller
         }
     }
 
-
-
 }

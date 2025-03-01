@@ -580,15 +580,12 @@ class ReservationsController extends Controller
 
             $timezone = $request->timezone ?? 'UTC';
 
-            // Récupérer la réservation principale
             $SocieteReservation = SocieteReservation::findOrFail($id);
 
-            // Mise à jour de la note dans SocieteReservation
             if ($request->has('notes')) {
                 $SocieteReservation->update(['notes' => $request->notes]);
             }
 
-            // Récupérer les détails de la réservation
             $detailReservations = SocieteDetailsReservation::where('id_reservation', $id)->get();
 
             if ($detailReservations->isEmpty()) {
@@ -608,20 +605,17 @@ class ReservationsController extends Controller
                 $updateDetails = true;
             }
 
-            // Mise à jour des détails de la réservation
             if ($updateDetails) {
-
                 $idHotel = $user->id_hotel;
 
-                // Vérifier la disponibilité des bungalows sélectionnés
                 $unavailableBungalows = [];
-                foreach ($request->selectedBungalow as $bungalow) {
+                foreach ($detailReservations as $bungalow) {
                     $isReserved = SocieteReservation::where('id_hotel', $idHotel)
                         ->where('id_reservation', '!=', $id)
-                        ->whereHas('detailsReservations', function ($query) use ($date_debut, $date_fin, $bungalow) {
+                        ->whereHas('detailsReservations', function ($query) use ($date_fin, $date_debut, $bungalow) {
                             $query->where('id_bungalow', $bungalow['id'])
-                                ->where('date_debut', '<', $date_debut)
-                                ->where('date_fin', '>', $date_fin);
+                                ->where('date_debut', '<', $date_fin)
+                                ->where('date_fin', '>', $date_debut);
                         })->exists();
 
                     if ($isReserved) {
@@ -666,6 +660,7 @@ class ReservationsController extends Controller
             ], 500);
         }
     }
+
 
 
     public function UpdateDetailDivers(Request $request, $id)
@@ -799,6 +794,150 @@ class ReservationsController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Détail de service divers ajouté avec succès.',
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de l\'ajout de la réservation.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+
+    public function UpdateDetailPrestation(Request $request, $id)
+    {
+        try {
+            $user = Auth::user();
+            if (!$user || !$user->id_hotel) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Utilisateur non authentifié ou non associé à un hôtel.',
+                ], 401);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'prestation' => 'required|string|max:250',
+                'prix_prestation' => 'required|numeric',
+                'nb_personne' => 'required|numeric',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Données invalides',
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+
+            $SocieteDetailsPrestation = SocieteDetailsPrestations::findOrFail($id);
+
+            $SocieteDetailsPrestation->update([
+                'prestation' => $request->prestation,
+                'prix_prestation' => $request->prix_prestation,
+                'nb_personne' => $request->nb_personne,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Prestation modifiée avec succès.',
+                'SocieteDetailsPrestation' => $SocieteDetailsPrestation,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la mise à jour du Prestation.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+    public function DeleteDetailPrestations(Request $request, $id)
+    {
+        try {
+            $user = Auth::user();
+            if (!$user || !$user->id_hotel) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Utilisateur non authentifié ou non associé à un hôtel.',
+                ], 401);
+            }
+
+            $SocieteDetailsPrestation = SocieteDetailsPrestations::findOrFail($id);
+
+            $SocieteDetailsPrestation->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Detail de reservation effacé avec succès.',
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la mise à jour de la réservation.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function AddDetailPrestations(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            if (!$user || !$user->id_hotel) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Utilisateur non authentifié ou non associé à un hôtel.',
+                ], 401);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'selectedPrestations.*.id' => 'required|integer|exists:societe_prestations,id',
+                'id_reservation' => 'required|string|exists:societe_reservations,id_reservation',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Données invalides',
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+
+            $SocieteReservation = SocieteReservation::where('id_reservation', $request->id_reservation)
+                ->where('id_hotel', $user->id_hotel)
+                ->first();
+
+            if (!$SocieteReservation) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Réservation introuvable.',
+                ], 404);
+            }
+
+            // Ajouter les détails de réservation
+            $details = [];
+            foreach ($request->selectedPrestations as $prestation) {
+                $details[] = [
+                    'id_reservation' => $SocieteReservation->id_reservation,
+                    'id_hotel' => $user->id_hotel,
+                    'prix_prestation' => $prestation['prestation']['prix_prestation'],
+                    'nb_personne' => $prestation['pax'],
+                    'id_prestation' => $prestation['prestation']['id'],
+                    'prestation' => $prestation['prestation']['prestation'],
+                ];
+            }
+
+            SocieteDetailsPrestations::insert($details);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Détails des prestations ajoutés avec succès.',
             ], 200);
 
         } catch (\Exception $e) {

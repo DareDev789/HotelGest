@@ -22,7 +22,8 @@ class AuthController extends Controller
 
             $user = SocieteUser::where('email', $request->email)->first();
 
-            if ($user && md5(sha1($request->password)) === $user->password) {
+            if ($user && Hash::check($request->password, $user->password))
+            {
                 $hotel = SocieteHotel::find($user->id_hotel);
                 $nom_hotel = $hotel ? $hotel->nom_etablissement : "";
                 
@@ -46,7 +47,9 @@ class AuthController extends Controller
                     ]);
                 }
             } else {
-                return response()->json(['message' => 'Unauthorized'], 401);
+                return response()->json([
+                    'message' => 'Unauthorized'
+                ], 401);
             }
 
         } catch (\Exception $e) {
