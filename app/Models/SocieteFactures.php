@@ -32,7 +32,7 @@ class SocieteFactures extends Model
         return $this->belongsTo(SocieteAccomptesReservations::class, 'id_accompte', 'id');
     }
 
-    public function user()
+    public function utilisateur()
     {
         return $this->belongsTo(SocieteUser::class, 'user', 'id');
     }

@@ -29,7 +29,7 @@ class SocieteAccomptesReservations extends Model
     {
         return $this->belongsTo(SocieteReservation::class, 'id_reservation', 'id_reservation');
     }
-    public function user()
+    public function utilisateur()
     {
         return $this->belongsTo(SocieteUser::class, 'save_by', 'id');
     }

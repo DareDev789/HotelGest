@@ -8,9 +8,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Support\Facades\Hash;
 
-class SocieteUser extends Model
+class SocieteUser extends Model 
 {
     use HasFactory, HasApiTokens, SoftDeletes;
+
+    protected $table = 'societe_users';
+
+    protected $primaryKey = 'id';
+    public $incrementing = true;
 
     protected $fillable = [
         'username',
