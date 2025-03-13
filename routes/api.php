@@ -143,7 +143,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::prefix('profil')->group(function () {
-        Route::get('/', [SocieteProfilController::class, 'getUserInfo']);
+        Route::get('/', [SocieteProfilController::class, 'getUserInfo']); 
         Route::post('/', [SocieteProfilController::class, 'updateUserInfo']);
         Route::get('AllProfil', [SocieteProfilController::class, 'getAllUsers']);
         Route::prefix('compte')->group(function () {
@@ -154,6 +154,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('facture')->group(function () {
         Route::get('/', [HotelController::class, 'getHotelSettingFacture']);
+        Route::get('/All', [FacturesController::class, 'GetAllFactures']);
         Route::put('/{id}', [HotelController::class, 'updateHotelSettingFactures']);
     });
 

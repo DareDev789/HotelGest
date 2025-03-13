@@ -153,4 +153,38 @@ class FacturesController extends Controller
         }
     }
 
+    public function GetAllFactures(Request $request)
+    {
+        try {
+            $user = Auth::user();
+
+            if (!$user || !$user->id_hotel) {
+                return response()->json(['message' => 'Aucun hôtel associé à cet utilisateur.'], 401);
+            }
+
+            $validatedData = $request->validate([
+                'selectedYear' => 'required|integer|min:2000|max:' . date('Y'),
+            ]);
+
+            $selectedYear = $validatedData['selectedYear'];
+
+            $factures = SocieteFactures::whereYear('created_at', $selectedYear)
+            ->where('id_hotel', $user->id_hotel)
+            ->get();
+
+            return response()->json([
+                'message' => "Factures recuperées avec succès !",
+                'factures' => $factures,
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de la récuperation des factures.', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'message' => 'Une erreur est survenue de la récuperation des factures.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
 }

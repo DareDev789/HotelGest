@@ -42,13 +42,13 @@ class SocieteFinanceService extends Controller
                 ->get();
 
             $totalRentreArgentReser = SocieteAccomptesReservations::whereYear('created_at', $selectedYear)
-                ->with('reservation', 'user')
+                ->with('reservation', 'utilisateur')
                 ->where('paid', true)
                 ->where('id_hotel', $user->id_hotel)
                 ->get();
 
             $totalRentreArgentCommande = SocieteAccomptesCommandes::whereYear('created_at', $selectedYear)
-                ->with('Commande', 'user')
+                ->with('Commande', 'utilisateur')
                 ->where('paid', true)
                 ->where('id_hotel', $user->id_hotel)
                 ->get();
